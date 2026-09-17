@@ -71,9 +71,16 @@ jobs:
   ios:
     name: iPhone (.ipa sin firmar)
     if: github.event_name == 'push' || inputs.plataforma == 'ambas' || inputs.plataforma == 'ios'
-    runs-on: macos-15
+    # Expo 57 trae dependencias Swift Package Manager que piden Swift 6.2,
+    # y macos-15 solo llega a 6.1. macos-26 viene con Xcode 26.
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+
+      - name: Versiones de las herramientas
+        run: |
+          xcodebuild -version
+          swift --version
 
       - uses: actions/setup-node@v4
         with:
@@ -91,9 +98,11 @@ jobs:
         run: pod install
 
       # Sin certificados de Apple no se puede firmar en CI, así que archivamos
-      # sin firma. El .ipa resultante se instala con Sideloadly o AltStore.
+      # sin firma. El log completo es enorme, así que lo guardamos y, si falla,
+      # imprimimos solo las líneas de error.
       - name: Archivar sin firma
         run: |
+          set -o pipefail
           xcodebuild archive \
             -workspace ios/Pasos.xcworkspace \
             -scheme Pasos \
@@ -104,7 +113,14 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGN_ENTITLEMENTS="" \
-            -quiet
+            -quiet 2>&1 | tee "$RUNNER_TEMP/xcodebuild.log"
+
+      - name: Mostrar los errores del archivado
+        if: failure()
+        run: |
+          echo "::group::Errores"
+          grep -nE "error:|FAILED|Could not resolve" "$RUNNER_TEMP/xcodebuild.log" | head -40 || true
+          echo "::endgroup::"
 
       - name: Empaquetar el .ipa
         run: |
