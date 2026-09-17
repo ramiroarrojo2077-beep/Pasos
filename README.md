@@ -73,8 +73,8 @@ se baja de Play Store).
 
 <img src="docs/qr-apk.png" width="180" alt="Código QR para bajar el APK">
 
-Abrí ese link desde el teléfono (o escaneá el QR con la cámara) y tocá el
-archivo cuando termine de bajar. La primera vez Android pide habilitar
+Pesa 110 MB, así que conviene bajarlo con wifi. Abrí ese link desde el teléfono
+(o escaneá el QR con la cámara) y tocá el archivo cuando termine de bajar. La primera vez Android pide habilitar
 "Instalar apps desconocidas" para el navegador o para WhatsApp: se acepta y
 listo. Ese link siempre apunta a la última versión compilada, así que podés
 mandárselo a tus amigos una vez y no cambia nunca.
