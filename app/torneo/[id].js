@@ -31,13 +31,13 @@ const STATUS = {
 export default function TorneoDetalle() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { tournaments, profile, history, friends, removeTournament } = useStore();
+  const { tournaments, profile, history, friends, remotos, removeTournament } = useStore();
 
   const tournament = useMemo(() => tournaments.find((t) => t.id === id), [tournaments, id]);
 
   const ranking = useMemo(() => {
     if (!tournament) return [];
-    return buildRanking({ profile, history, friends, tournament });
+    return buildRanking({ profile, history, friends, tournament, remotos });
   }, [tournament, profile, history, friends]);
 
   if (!tournament) {

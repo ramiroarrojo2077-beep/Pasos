@@ -17,6 +17,7 @@ export function useNearbyPlaces() {
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [places, setPlaces] = useState(() => demoPlacesAround(DEFAULT_CENTER));
   const [source, setSource] = useState('demo');
+  const [motivo, setMotivo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [locationDenied, setLocationDenied] = useState(false);
   const [error, setError] = useState(null);
@@ -27,15 +28,16 @@ export function useNearbyPlaces() {
     setLoading(true);
     setError(null);
     try {
-      const { places: found, source: src } = await fetchNearbyPlaces(coords);
+      const { places: found, source: src, motivo: porque } = await fetchNearbyPlaces(coords);
       if (id !== requestId.current) return;
       setPlaces(found);
       setSource(src);
+      setMotivo(porque ?? null);
     } catch (err) {
       if (id !== requestId.current) return;
       setPlaces(demoPlacesAround(coords));
       setSource('demo');
-      setError('No pudimos buscar lugares ahora, te mostramos sugerencias guardadas.');
+      setMotivo('sin-conexion');
     } finally {
       if (id === requestId.current) setLoading(false);
     }
@@ -88,6 +90,7 @@ export function useNearbyPlaces() {
     center,
     places: withDistance,
     source,
+    motivo,
     loading,
     locationDenied,
     error,

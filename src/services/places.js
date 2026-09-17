@@ -1,10 +1,24 @@
 import { DEMO_PLACES } from '../data/demo';
 import { distanceMeters } from '../utils/geo';
 
-const OVERPASS_ENDPOINTS = [
+/**
+ * Búsqueda de lugares reales en OpenStreetMap, vía Overpass.
+ *
+ * Overpass es gratis y sin clave, pero es lento y a veces devuelve 429 o
+ * 504 cuando está cargado. Por eso: varios espejos, consulta por GET (pasa
+ * mejor por redes móviles que un POST con cuerpo de texto), y si la zona
+ * está vacía se amplía el radio antes de darse por vencido.
+ */
+
+const ESPEJOS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 ];
+
+const RADIOS = [1200, 3000, 8000];
+const ESPERA = 25000;
 
 const AMENITY_TO_CATEGORY = {
   cafe: 'cafe',
@@ -27,27 +41,28 @@ const CATEGORY_LABEL = {
   otros: 'Otros',
 };
 
-function buildQuery({ latitude, longitude }, radius) {
-  return `[out:json][timeout:20];
-(
-  node["amenity"~"^(cafe|restaurant|fast_food|ice_cream|bakery|juice_bar)$"](around:${radius},${latitude},${longitude});
-  way["amenity"~"^(cafe|restaurant|fast_food|ice_cream|bakery|juice_bar)$"](around:${radius},${latitude},${longitude});
-);
-out center ${80};`;
+function consulta({ latitude, longitude }, radio) {
+  const lat = latitude.toFixed(6);
+  const lon = longitude.toFixed(6);
+  const tipos = 'cafe|restaurant|fast_food|ice_cream|bakery|juice_bar';
+  return `[out:json][timeout:25];(` +
+    `node["amenity"~"^(${tipos})$"]["name"](around:${radio},${lat},${lon});` +
+    `way["amenity"~"^(${tipos})$"]["name"](around:${radio},${lat},${lon});` +
+    `);out center 120;`;
 }
 
-function normalize(element, center) {
+function normalizar(element, centro) {
   const lat = element.lat ?? element.center?.lat;
   const lon = element.lon ?? element.center?.lon;
   if (lat == null || lon == null) return null;
   const tags = element.tags || {};
   if (!tags.name) return null;
+
   const category = AMENITY_TO_CATEGORY[tags.amenity] || 'otros';
-  const cuisine = (tags.cuisine || '').split(';')[0].replace(/_/g, ' ');
-  const subtitle = [CATEGORY_LABEL[category], cuisine ? cuisine : null]
-    .filter(Boolean)
-    .join(' · ');
+  const cocina = (tags.cuisine || '').split(';')[0].replace(/_/g, ' ');
+  const subtitle = [CATEGORY_LABEL[category], cocina || null].filter(Boolean).join(' · ');
   const coords = { latitude: lat, longitude: lon };
+
   return {
     id: `osm_${element.type}_${element.id}`,
     name: tags.name,
@@ -63,59 +78,76 @@ function normalize(element, center) {
     takeaway: tags.takeaway === 'yes',
     vegan: tags['diet:vegan'] === 'yes' || tags['diet:vegan'] === 'only',
     wifi: tags.internet_access === 'wlan' || tags.internet_access === 'yes',
-    distance: distanceMeters(center, coords),
+    distance: distanceMeters(centro, coords),
     source: 'osm',
   };
 }
 
-export function demoPlacesAround(center) {
+export function demoPlacesAround(centro) {
   return DEMO_PLACES.map((p) => {
     const coords = {
-      latitude: center.latitude + p.offset.lat,
-      longitude: center.longitude + p.offset.lon,
+      latitude: centro.latitude + p.offset.lat,
+      longitude: centro.longitude + p.offset.lon,
     };
     return {
       ...p,
       ...coords,
-      address: 'A pocas cuadras',
-      distance: distanceMeters(center, coords),
+      address: 'Lugar de ejemplo',
+      distance: distanceMeters(centro, coords),
       source: 'demo',
     };
   }).sort((a, b) => a.distance - b.distance);
 }
 
-async function fetchFrom(endpoint, query, signal) {
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: query,
-    signal,
-  });
-  if (!res.ok) throw new Error(`Overpass ${res.status}`);
-  return res.json();
+async function pedir(endpoint, query) {
+  const controlador = new AbortController();
+  const reloj = setTimeout(() => controlador.abort(), ESPERA);
+  try {
+    const res = await fetch(`${endpoint}?data=${encodeURIComponent(query)}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      signal: controlador.signal,
+    });
+    if (!res.ok) throw new Error(`Overpass respondió ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(reloj);
+  }
 }
 
 /**
- * Busca cafeterías y lugares de comida reales cerca de unas coordenadas.
- * Usa OpenStreetMap (Overpass), sin API key. Si falla la red, devuelve lugares demo.
+ * Devuelve { places, source, motivo }.
+ *  source 'osm'  → lugares reales
+ *  source 'demo' → no se pudo, van los de ejemplo, y `motivo` dice por qué
  */
-export async function fetchNearbyPlaces(center, radius = 1500) {
-  const query = buildQuery(center, radius);
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    try {
-      const json = await fetchFrom(endpoint, query, controller.signal);
-      clearTimeout(timer);
-      const places = (json.elements || [])
-        .map((el) => normalize(el, center))
-        .filter(Boolean)
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, 60);
-      if (places.length) return { places, source: 'osm' };
-    } catch (err) {
-      clearTimeout(timer);
+export async function fetchNearbyPlaces(centro) {
+  let huboRed = false;
+
+  for (const radio of RADIOS) {
+    const query = consulta(centro, radio);
+
+    for (const endpoint of ESPEJOS) {
+      try {
+        const json = await pedir(endpoint, query);
+        huboRed = true;
+        const lugares = (json.elements || [])
+          .map((el) => normalizar(el, centro))
+          .filter(Boolean)
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, 60);
+
+        if (lugares.length) return { places: lugares, source: 'osm', radio };
+        // Respondió bien pero la zona está vacía: probamos un radio mayor.
+        break;
+      } catch (err) {
+        // Este espejo no anduvo; seguimos con el siguiente.
+      }
     }
   }
-  return { places: demoPlacesAround(center), source: 'demo' };
+
+  return {
+    places: demoPlacesAround(centro),
+    source: 'demo',
+    motivo: huboRed ? 'sin-lugares' : 'sin-conexion',
+  };
 }

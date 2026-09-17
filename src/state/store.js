@@ -42,7 +42,8 @@ function initialState() {
     friends,
     tournaments: defaultTournaments(friends),
     favorites: [],
-    settings: { manualMode: false, lastCenter: null },
+    settings: { manualMode: false, lastCenter: null, servidor: '' },
+    remotos: {},
   };
 }
 
@@ -100,6 +101,11 @@ function reducer(state, action) {
           : [...state.favorites, action.payload],
       };
     }
+    case 'remotos':
+      return {
+        ...state,
+        remotos: { ...state.remotos, [action.payload.codigo]: action.payload.jugadores },
+      };
     case 'settings':
       return { ...state, settings: { ...state.settings, ...action.payload } };
     case 'reset':
@@ -160,6 +166,8 @@ export function StoreProvider({ children }) {
       removeTournament: (id) => dispatch({ type: 'removeTournament', payload: id }),
       toggleFavorite: (id) => dispatch({ type: 'toggleFavorite', payload: id }),
       setSettings: (payload) => dispatch({ type: 'settings', payload }),
+      setRemotos: (codigo, jugadores) =>
+        dispatch({ type: 'remotos', payload: { codigo, jugadores } }),
       reset: () => dispatch({ type: 'reset' }),
     }),
     [],
@@ -188,7 +196,23 @@ export function stepsInRange(entity, startISO, endISO) {
   return total;
 }
 
-export function buildRanking({ profile, history, friends, tournament }) {
+export function buildRanking({ profile, history, friends, tournament, remotos }) {
+  // Si el torneo está sincronizado, la tabla sale del servidor: ahí están
+  // todos los que entraron con el código, no solo los que yo agregué.
+  const delServidor = remotos?.[tournament.code];
+  if (delServidor?.length) {
+    return delServidor
+      .map((j) => ({
+        id: j.id,
+        name: j.nombre,
+        avatar: j.avatar,
+        isMe: j.id === profile.code,
+        steps: stepsInRange({ history: j.historial }, tournament.startISO, tournament.endISO),
+      }))
+      .sort((a, b) => b.steps - a.steps)
+      .map((p, i) => ({ ...p, position: i + 1 }));
+  }
+
   const me = {
     id: ME,
     name: profile.name || 'Vos',

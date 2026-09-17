@@ -10,6 +10,7 @@ import { Silkscreen_400Regular, Silkscreen_700Bold } from '@expo-google-fonts/si
 import { StoreProvider, useStore } from '../src/state/store';
 import { PlacesProvider } from '../src/state/places';
 import { StepsProvider } from '../src/state/steps';
+import { SyncProvider } from '../src/state/sync';
 import { colors } from '../src/theme';
 import CrashCatcher, { GameOver } from '../src/components/CrashCatcher';
 
@@ -79,10 +80,12 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StoreProvider>
           <StepsProvider>
-            <PlacesProvider>
-              <StatusBar style="light" />
-              <RootNavigator />
-            </PlacesProvider>
+            <SyncProvider>
+              <PlacesProvider>
+                <StatusBar style="light" />
+                <RootNavigator />
+              </PlacesProvider>
+            </SyncProvider>
           </StepsProvider>
         </StoreProvider>
       </SafeAreaProvider>

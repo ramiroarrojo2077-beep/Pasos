@@ -25,14 +25,14 @@ const STATUS = {
 
 export default function Torneos() {
   const router = useRouter();
-  const { tournaments, profile, history, friends } = useStore();
+  const { tournaments, profile, history, friends, remotos } = useStore();
 
   const enriched = useMemo(
     () =>
       tournaments
         .map((t) => {
           const status = tournamentStatus(t);
-          const ranking = buildRanking({ profile, history, friends, tournament: t });
+          const ranking = buildRanking({ profile, history, friends, tournament: t, remotos });
           return { ...t, status, ranking, me: ranking.find((r) => r.id === ME) };
         })
         .sort((a, b) => {

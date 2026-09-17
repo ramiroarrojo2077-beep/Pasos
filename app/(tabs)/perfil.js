@@ -24,6 +24,8 @@ import {
   SectionHeader,
 } from '../../src/components/ui';
 import { useSteps } from '../../src/state/steps';
+import { useSync } from '../../src/state/sync';
+import { probarServidor, normalizarServidor } from '../../src/services/sync';
 import { openHealthConnect } from '../../src/services/steps';
 import { useStore } from '../../src/state/store';
 import { AVATARS } from '../../src/data/demo';
@@ -32,7 +34,10 @@ import { dayKey, lastNDays, shortWeekday } from '../../src/utils/dates';
 import { formatNumber, stepsToKcal, stepsToKm, arcade } from '../../src/utils/format';
 
 export default function Perfil() {
-  const { profile, history, setProfile, addSteps, reset, favorites } = useStore();
+  const { profile, history, settings, setProfile, setSettings, addSteps, reset, favorites } = useStore();
+  const grupo = useSync();
+  const [servidor, setServidor] = useState(settings?.servidor || '');
+  const [probando, setProbando] = useState(false);
   const { support, backgroundEnabled, syncing, lastSync, sync, connect, error } = useSteps();
   const [name, setName] = useState(profile.name);
   const [goal, setGoal] = useState(String(profile.goal));
@@ -57,6 +62,30 @@ export default function Perfil() {
     const parsed = Math.max(1000, Math.min(50000, parseInt(goal, 10) || 10000));
     setGoal(String(parsed));
     setProfile({ goal: parsed });
+  };
+
+  const guardarServidor = async () => {
+    const url = normalizarServidor(servidor);
+    if (!url) {
+      setSettings({ servidor: '' });
+      setServidor('');
+      Alert.alert('Sincronización apagada', 'La app vuelve a funcionar solo con tus datos.');
+      return;
+    }
+    setProbando(true);
+    try {
+      await probarServidor(url);
+      setSettings({ servidor: url });
+      setServidor(url);
+      Alert.alert(
+        'Conectado',
+        'Los torneos se sincronizan solos. Pasale el código de invitación a tus amigos y, cuando entren con la misma dirección, aparecen en la tabla.',
+      );
+    } catch (err) {
+      Alert.alert('No se pudo conectar', err?.message || 'Revisá la dirección.');
+    } finally {
+      setProbando(false);
+    }
   };
 
   const confirmReset = () => {
@@ -172,6 +201,69 @@ export default function Perfil() {
             {stepsToKcal(today)} KCAL
           </Muted>
         </View>
+      </Panel>
+
+      {/* Grupo compartido */}
+      <Panel style={styles.block} tone={grupo.activo ? 'cyan' : 'default'}>
+        <SectionHeader title="Grupo compartido" color={colors.cyan} />
+        <Muted style={{ marginBottom: spacing(2) }}>
+          Sin servidor, cada teléfono guarda sus propios pasos y nadie ve los
+          del resto. Con uno, todos los que entren con el mismo código de
+          torneo aparecen en la misma tabla.
+        </Muted>
+        <Caption>Dirección del servidor</Caption>
+        <TextInput
+          value={servidor}
+          onChangeText={setServidor}
+          placeholder="https://mi-servidor.com"
+          placeholderTextColor={colors.textFaint}
+          style={styles.input}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+        />
+        <View style={styles.buttonsRow}>
+          <Button
+            label={servidor.trim() ? 'Conectar' : 'Apagar'}
+            icon="globe"
+            size="sm"
+            style={styles.flexBtn}
+            loading={probando}
+            onPress={guardarServidor}
+          />
+          {grupo.activo ? (
+            <Button
+              label="Sincronizar"
+              icon="clock"
+              variant="dark"
+              size="sm"
+              style={styles.flexBtn}
+              loading={grupo.estado === 'sincronizando'}
+              onPress={grupo.sincronizar}
+            />
+          ) : null}
+        </View>
+        <View style={{ marginTop: spacing(3) }}>
+          <Badge
+            label={
+              !grupo.activo
+                ? 'Solo este teléfono'
+                : grupo.estado === 'error'
+                  ? 'Error al sincronizar'
+                  : grupo.estado === 'ok'
+                    ? 'Sincronizado'
+                    : 'Conectando'
+            }
+            color={
+              !grupo.activo ? colors.textFaint : grupo.estado === 'error' ? colors.red : colors.cyan
+            }
+            icon={grupo.estado === 'ok' ? 'check' : 'globe'}
+          />
+        </View>
+        {grupo.error ? <Muted style={styles.error}>{grupo.error}</Muted> : null}
+        {grupo.ultima ? (
+          <Muted style={styles.syncNote}>Al día: {grupo.ultima.toLocaleTimeString()}</Muted>
+        ) : null}
       </Panel>
 
       {/* Datos */}

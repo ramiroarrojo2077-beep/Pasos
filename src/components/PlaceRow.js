@@ -31,6 +31,9 @@ export default function PlaceRow({ place, onPress, active, compact }) {
               <Text style={[type.small, styles.subtitle]} numberOfLines={1}>
                 {place.subtitle}
               </Text>
+              {place.source === 'demo' ? (
+                <Text style={[type.tiny, styles.ejemplo]}>EJEMPLO · NO EXISTE</Text>
+              ) : null}
               <View style={styles.metaRow}>
                 <PixelIcon name="pin" size={10} color={colors.textFaint} />
                 <Text style={[type.tiny, styles.meta]}>{formatDistance(place.distance)}</Text>
@@ -86,4 +89,5 @@ const styles = StyleSheet.create({
   subtitle: { color: colors.textDim },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: 2 },
   meta: { color: colors.textFaint, letterSpacing: 0.6, marginRight: spacing(1) },
+  ejemplo: { color: colors.amber, letterSpacing: 0.8, fontSize: 9 },
 });

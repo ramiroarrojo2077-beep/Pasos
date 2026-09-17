@@ -181,19 +181,38 @@ tiene mayúsculas acentuadas (los gabinetes de los 80 eran ASCII puro), así que
 los títulos van sin tildes a propósito; el texto corrido y los campos usan
 Silkscreen, que sí las tiene.
 
-## Estado actual de los datos
+## Que los amigos se vean entre sí
 
-Todo se guarda **en el teléfono** (AsyncStorage). No hay servidor, así que:
+Por defecto cada teléfono guarda lo suyo: ves tus pasos, pero no los del
+resto. Para que la tabla sea compartida hace falta un servidor, porque los
+teléfonos no se hablan solos.
 
-- Tus pasos, torneos y favoritos son tuyos y no salen del dispositivo.
-- Los amigos que agregás aparecen en el ranking, pero sus pasos no se
-  sincronizan solos entre teléfonos: para eso hace falta un backend.
-- La app arranca con amigos y un torneo de ejemplo para que se entienda el flujo;
-  se borran desde Perfil → "Borrar mis datos".
+Está incluido en `servidor/`: un archivo, sin dependencias, sin base de datos.
 
-Si más adelante querés que los pasos se compartan de verdad entre teléfonos, el
-lugar para engancharlo es `src/state/store.js` (las acciones ya están separadas
-del resto de la app) más un endpoint que reciba `{ code, history }`.
+```bash
+node servidor/index.js
+```
+
+Después, en la app: **Perfil → Grupo compartido**, pegás la dirección y tocás
+Conectar. A partir de ahí, todos los que entren con **el mismo código de torneo
+y la misma dirección** aparecen en la misma tabla, y los pasos se sincronizan
+solos cada minuto y cada vez que abrís la app.
+
+Para dejarlo prendido siempre sirve cualquier hosting gratuito que corra Node
+—Render, Railway, Fly.io— o una computadora propia. Los detalles están en
+[`servidor/README.md`](servidor/README.md).
+
+Si el campo queda vacío, la app funciona igual, solo que cada uno ve lo suyo.
+
+### Qué se guarda y qué no
+
+En el servidor, por cada código de torneo: el nombre que cada uno eligió, su
+personaje y los pasos por día de los últimos 60 días. Nada de ubicación,
+contactos ni identificadores del teléfono. El código es la única llave, así
+que compartilo solo con quien quieras que vea la tabla.
+
+En el teléfono, en cambio, queda todo: tus pasos, torneos y favoritos viven en
+el almacenamiento local y se borran desde Perfil → "Borrar mis datos".
 
 ## Requisitos
 

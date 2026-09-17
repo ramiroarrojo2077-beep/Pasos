@@ -27,7 +27,7 @@ import { formatNumber, stepsToKcal, stepsToKm, arcade } from '../../src/utils/fo
 
 export default function Home() {
   const router = useRouter();
-  const { profile, history, friends, tournaments, addSteps } = useStore();
+  const { profile, history, friends, tournaments, remotos, addSteps } = useStore();
   const { manualMode } = useSteps();
   const { places, center, loading } = usePlaces();
 

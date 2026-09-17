@@ -12,7 +12,7 @@ import { colors, spacing, type } from '../../src/theme';
 
 export default function Mapa() {
   const router = useRouter();
-  const { places, center, loading, source, locationDenied, locate, reload } = usePlaces();
+  const { places, center, loading, source, motivo, locationDenied, locate, reload } = usePlaces();
   const { favorites } = useStore();
   const [category, setCategory] = useState('todos');
   const [selected, setSelected] = useState(null);
@@ -96,7 +96,9 @@ export default function Mapa() {
         <Panel tone="dark" style={styles.notice} onPress={reload}>
           <PixelIcon name="globe" size={16} color={colors.amber} />
           <Muted style={styles.noticeText}>
-            Sin conexión al buscador: estos son lugares de ejemplo. Tocá para reintentar.
+            {motivo === 'sin-lugares'
+              ? 'No hay cafés ni restaurantes cargados en OpenStreetMap cerca tuyo. Mientras tanto van estos de ejemplo. Tocá para reintentar.'
+              : 'No se pudo conectar al buscador de lugares. Estos son de ejemplo, no existen. Tocá para reintentar.'}
           </Muted>
         </Panel>
       ) : null}
