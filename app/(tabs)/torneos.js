@@ -1,30 +1,31 @@
 import React, { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import PixelIcon from '../../src/components/PixelIcon';
 import {
   Avatar,
   Badge,
   Button,
-  Card,
+  Caption,
   EmptyState,
   Muted,
+  Panel,
   Screen,
 } from '../../src/components/ui';
 import { ME, buildRanking, tournamentStatus, useStore } from '../../src/state/store';
-import { colors, spacing } from '../../src/theme';
+import { colors, spacing, type } from '../../src/theme';
 import { daysLeft, formatRange } from '../../src/utils/dates';
-import { formatNumber } from '../../src/utils/format';
+import { formatNumber, arcade } from '../../src/utils/format';
 
-const STATUS_LABEL = {
-  activo: { label: 'En juego', color: colors.lime },
-  proximo: { label: 'Por empezar', color: colors.blue },
-  terminado: { label: 'Terminado', color: colors.muted },
+const STATUS = {
+  activo: { label: 'En juego', color: colors.lime, tone: 'neon' },
+  proximo: { label: 'Por empezar', color: colors.cyan, tone: 'cyan' },
+  terminado: { label: 'Terminado', color: colors.textFaint, tone: 'dark' },
 };
 
 export default function Torneos() {
   const router = useRouter();
-  const store = useStore();
-  const { tournaments, profile, history, friends } = store;
+  const { tournaments, profile, history, friends } = useStore();
 
   const enriched = useMemo(
     () =>
@@ -44,13 +45,11 @@ export default function Torneos() {
   return (
     <Screen style={styles.screen}>
       <View style={styles.header}>
-        <Text style={styles.title}>Torneos</Text>
-        <Button
-          label="Nuevo"
-          icon="+"
-          onPress={() => router.push('/torneo/nuevo')}
-          style={styles.newBtn}
-        />
+        <View>
+          <Caption color={colors.magenta}>Competencia</Caption>
+          <Text style={[type.title, styles.title]}>TORNEOS</Text>
+        </View>
+        <Button label="Nuevo" icon="plus" size="sm" onPress={() => router.push('/torneo/nuevo')} />
       </View>
 
       <FlatList
@@ -58,44 +57,62 @@ export default function Torneos() {
         keyExtractor={(t) => t.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: spacing(3) }} />}
+        ItemSeparatorComponent={() => <View style={{ height: spacing(4) }} />}
         ListEmptyComponent={
           <EmptyState
-            icon="🏆"
-            title="Sin torneos todavía"
-            subtitle="Creá uno, invitá a tus amigos con el código y el que menos camina invita el café."
+            icon="trophy"
+            title="Sin torneos"
+            subtitle="Creá uno, invitá a tus amigos con el código y que el último del ranking pague el café."
             action={
               <Button
                 label="Crear torneo"
+                icon="trophy"
                 onPress={() => router.push('/torneo/nuevo')}
-                style={{ marginTop: spacing(4) }}
+                style={{ marginTop: spacing(3) }}
               />
             }
           />
         }
         renderItem={({ item }) => {
-          const st = STATUS_LABEL[item.status];
+          const st = STATUS[item.status];
           const leader = item.ranking[0];
           return (
-            <Card onPress={() => router.push(`/torneo/${item.id}`)} style={styles.card}>
+            <Panel tone={st.tone} onPress={() => router.push(`/torneo/${item.id}`)} style={styles.card}>
               <View style={styles.cardTop}>
-                <Text style={styles.emoji}>{item.emoji || '🏆'}</Text>
+                <View style={[styles.iconBox, { borderColor: st.color }]}>
+                  <PixelIcon name={item.icon || 'trophy'} size={24} color={st.color} />
+                </View>
                 <View style={styles.flex}>
-                  <Text style={styles.name}>{item.name}</Text>
-                  <Muted>{formatRange(item.startISO, item.endISO)}</Muted>
+                  <Text style={[type.title, styles.name]} numberOfLines={1}>
+                    {arcade(item.name)}
+                  </Text>
+                  <View style={styles.dateRow}>
+                    <PixelIcon name="clock" size={11} color={colors.textFaint} />
+                    <Text style={[type.tiny, styles.meta]}>
+                      {formatRange(item.startISO, item.endISO)}
+                      {item.status === 'activo' ? ` · ${daysLeft(item.endISO)}D` : ''}
+                    </Text>
+                  </View>
                 </View>
                 <Badge label={st.label} color={st.color} />
               </View>
 
-              {item.prize ? <Muted style={styles.prize}>🎁 {item.prize}</Muted> : null}
+              {item.prize ? (
+                <View style={styles.prizeRow}>
+                  <PixelIcon name="star" size={12} color={colors.amber} />
+                  <Muted style={styles.prize} numberOfLines={1}>
+                    {item.prize}
+                  </Muted>
+                </View>
+              ) : null}
 
               <View style={styles.footer}>
                 <View style={styles.avatars}>
                   {item.ranking.slice(0, 5).map((r, i) => (
                     <Avatar
                       key={r.id}
-                      emoji={r.avatar}
-                      size={32}
+                      avatar={r.avatar}
+                      size={30}
                       active={r.isMe}
                       style={i > 0 ? styles.overlap : null}
                     />
@@ -103,19 +120,19 @@ export default function Torneos() {
                 </View>
                 <View style={styles.footerRight}>
                   {leader ? (
-                    <Muted>
-                      👑 {leader.name} · {formatNumber(leader.steps)}
-                    </Muted>
+                    <View style={styles.leaderRow}>
+                      <PixelIcon name="crown" size={12} color={colors.gold} />
+                      <Text style={[type.tiny, { color: colors.textDim }]}>
+                        {leader.name.toUpperCase()} · {formatNumber(leader.steps)}
+                      </Text>
+                    </View>
                   ) : null}
-                  <Text style={styles.position}>
-                    {item.me ? `Vas ${item.me.position}º` : 'No estás anotado'}
-                    {item.status === 'activo'
-                      ? ` · ${daysLeft(item.endISO)}d`
-                      : ''}
+                  <Text style={[type.tiny, styles.position]}>
+                    {item.me ? `VAS ${item.me.position}º DE ${item.ranking.length}` : 'NO ESTÁS ANOTADO'}
                   </Text>
                 </View>
               </View>
-            </Card>
+            </Panel>
           );
         }}
       />
@@ -128,28 +145,38 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
-    paddingVertical: spacing(3),
+    paddingVertical: spacing(4),
   },
-  title: { color: colors.text, fontSize: 20, fontWeight: '800' },
-  newBtn: { minHeight: 42, paddingHorizontal: spacing(4) },
-  list: { paddingBottom: spacing(8) },
+  title: { fontSize: 16, color: colors.text, marginTop: 4 },
+  list: { paddingBottom: spacing(8), paddingTop: spacing(1) },
   card: { gap: spacing(3) },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
-  emoji: { fontSize: 28 },
-  name: { color: colors.text, fontSize: 16, fontWeight: '800' },
-  prize: { fontSize: 12 },
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.panelAlt,
+  },
+  name: { fontSize: 11, color: colors.text },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: 5 },
+  meta: { color: colors.textFaint, letterSpacing: 0.6 },
+  prizeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
+  prize: { flex: 1, fontSize: 11 },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 2,
-    borderTopColor: colors.borderSoft,
+    borderTopColor: colors.borderDim,
     paddingTop: spacing(3),
   },
   avatars: { flexDirection: 'row' },
   overlap: { marginLeft: -10 },
-  footerRight: { alignItems: 'flex-end', gap: 2 },
-  position: { color: colors.lime, fontSize: 12, fontWeight: '800' },
+  footerRight: { alignItems: 'flex-end', gap: 4 },
+  leaderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) },
+  position: { color: colors.lime, letterSpacing: 0.6 },
 });

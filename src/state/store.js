@@ -4,7 +4,7 @@ import { AVATARS, demoFriends } from '../data/demo';
 import { dayKey, addDays, isActiveRange } from '../utils/dates';
 import { randomId, inviteCode } from '../utils/geo';
 
-const STORAGE_KEY = 'pasos:state:v1';
+const STORAGE_KEY = 'pasos:state:v2';
 
 export const ME = 'me';
 
@@ -15,8 +15,8 @@ function defaultTournaments(friends) {
     {
       id: randomId('trn'),
       name: 'Liga de la semana',
-      emoji: '🏆',
-      prize: 'El último paga el café ☕',
+      icon: 'trophy',
+      prize: 'El último del ranking paga el café',
       code: inviteCode(),
       startISO: start.toISOString(),
       endISO: end.toISOString(),

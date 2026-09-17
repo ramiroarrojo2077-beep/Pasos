@@ -1,13 +1,14 @@
 import React, { useEffect, useRef } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { colors, categoryColors, radius } from '../theme';
+import PixelIcon from './PixelIcon';
+import { Scanlines } from './ui';
+import { CATEGORY_SPRITE } from './sprites';
+import { colors, categoryColors } from '../theme';
 import { regionFrom } from '../utils/geo';
 import { darkMapStyle } from './mapStyle';
 
-const ICONS = { cafe: '☕', comida: '🍽️', jugos: '🥤', helados: '🍦', otros: '📍' };
-
-export default function PlacesMap({ center, places, selectedId, onSelect, style }) {
+export default function PlacesMap({ center, places = [], selectedId, onSelect, style }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -24,69 +25,77 @@ export default function PlacesMap({ center, places, selectedId, onSelect, style 
   if (!center) return <View style={[styles.map, style, styles.placeholder]} />;
 
   return (
-    <MapView
-      ref={ref}
-      style={[styles.map, style]}
-      provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-      initialRegion={regionFrom(center, 900)}
-      customMapStyle={darkMapStyle}
-      userInterfaceStyle="dark"
-      showsUserLocation
-      showsMyLocationButton={false}
-      showsCompass={false}
-      toolbarEnabled={false}
-    >
-      {places.map((place) => {
-        const tint = categoryColors[place.category] || colors.blue;
-        const active = place.id === selectedId;
-        return (
-          <Marker
-            key={place.id}
-            coordinate={{ latitude: place.latitude, longitude: place.longitude }}
-            onPress={() => onSelect?.(place)}
-            tracksViewChanges={false}
-            title={place.name}
-            description={place.subtitle}
-          >
-            <View
-              style={[
-                styles.pin,
-                { backgroundColor: tint, borderColor: active ? colors.lime : '#0A1020' },
-                active && styles.pinActive,
-              ]}
+    <View style={[styles.map, style]}>
+      <MapView
+        ref={ref}
+        style={StyleSheet.absoluteFill}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        initialRegion={regionFrom(center, 900)}
+        customMapStyle={darkMapStyle}
+        userInterfaceStyle="dark"
+        showsUserLocation
+        showsMyLocationButton={false}
+        showsCompass={false}
+        showsBuildings={false}
+        showsPointsOfInterest={false}
+        toolbarEnabled={false}
+      >
+        {places.map((place) => {
+          const tint = categoryColors[place.category] || colors.cyan;
+          const active = place.id === selectedId;
+          return (
+            <Marker
+              key={place.id}
+              coordinate={{ latitude: place.latitude, longitude: place.longitude }}
+              onPress={() => onSelect?.(place)}
+              tracksViewChanges={false}
+              anchor={{ x: 0.5, y: 1 }}
+              title={place.name}
+              description={place.subtitle}
             >
-              <Text style={styles.pinIcon}>{ICONS[place.category] || '📍'}</Text>
-            </View>
-            <View style={[styles.pinTail, { borderTopColor: tint }]} />
-          </Marker>
-        );
-      })}
-    </MapView>
+              <View style={styles.pinWrap}>
+                <View style={styles.pinShadow} />
+                <View
+                  style={[
+                    styles.pin,
+                    { backgroundColor: tint, borderColor: active ? colors.lime : colors.bgDeep },
+                  ]}
+                >
+                  <PixelIcon
+                    name={CATEGORY_SPRITE[place.category] || 'pin'}
+                    size={16}
+                    color={colors.bgDeep}
+                  />
+                </View>
+                <View style={[styles.pinStem, { backgroundColor: active ? colors.lime : tint }]} />
+              </View>
+            </Marker>
+          );
+        })}
+      </MapView>
+      <Scanlines opacity={0.14} period={4} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  map: { flex: 1, borderRadius: radius.md },
-  placeholder: { backgroundColor: colors.cardAlt },
+  map: { flex: 1, overflow: 'hidden' },
+  placeholder: { backgroundColor: colors.panelAlt },
+  pinWrap: { width: 32, alignItems: 'center' },
+  pinShadow: {
+    position: 'absolute',
+    left: 3,
+    top: 3,
+    width: 32,
+    height: 32,
+    backgroundColor: colors.shadow,
+  },
   pin: {
-    width: 34,
-    height: 34,
-    borderRadius: 6,
-    borderWidth: 2,
+    width: 32,
+    height: 32,
+    borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pinActive: { transform: [{ scale: 1.15 }] },
-  pinIcon: { fontSize: 16 },
-  pinTail: {
-    alignSelf: 'center',
-    width: 0,
-    height: 0,
-    borderLeftWidth: 5,
-    borderRightWidth: 5,
-    borderTopWidth: 7,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    marginTop: -1,
-  },
+  pinStem: { width: 4, height: 7 },
 });

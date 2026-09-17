@@ -1,67 +1,84 @@
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../src/theme';
+import PixelIcon from '../../src/components/PixelIcon';
+import { colors, type } from '../../src/theme';
 
-function TabIcon({ icon, color }) {
-  return <Text style={[styles.icon, { color }]}>{icon}</Text>;
+function TabButton({ icon, color, focused }) {
+  return (
+    <View style={styles.tabItem}>
+      <PixelIcon name={icon} size={22} color={color} />
+      <View
+        style={[
+          styles.tick,
+          { backgroundColor: focused ? colors.lime : 'transparent' },
+        ]}
+      />
+    </View>
+  );
 }
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
-  const bottom = Math.max(insets.bottom, 12);
+  const bottom = Math.max(insets.bottom, 10);
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.lime,
-        tabBarInactiveTintColor: colors.muted,
+        tabBarInactiveTintColor: colors.textFaint,
         tabBarStyle: {
           backgroundColor: colors.bgDeep,
-          borderTopColor: colors.borderSoft,
-          borderTopWidth: 2,
-          height: 60 + bottom,
-          paddingTop: 8,
+          borderTopColor: colors.border,
+          borderTopWidth: 3,
+          height: 66 + bottom,
+          paddingTop: 10,
           paddingBottom: bottom,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '800' },
+        tabBarLabelStyle: {
+          fontFamily: type.title.fontFamily,
+          fontSize: 7,
+          letterSpacing: 0.5,
+          marginTop: 2,
+        },
+        tabBarItemStyle: { paddingVertical: 2 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Inicio',
-          tabBarIcon: ({ color }) => <TabIcon icon="🏠" color={color} />,
+          title: 'INICIO',
+          tabBarIcon: ({ color, focused }) => <TabButton icon="home" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="mapa"
         options={{
-          title: 'Mapa',
-          tabBarIcon: ({ color }) => <TabIcon icon="🗺️" color={color} />,
+          title: 'MAPA',
+          tabBarIcon: ({ color, focused }) => <TabButton icon="map" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="torneos"
         options={{
-          title: 'Torneos',
-          tabBarIcon: ({ color }) => <TabIcon icon="🏆" color={color} />,
+          title: 'TORNEOS',
+          tabBarIcon: ({ color, focused }) => <TabButton icon="trophy" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="amigos"
         options={{
-          title: 'Amigos',
-          tabBarIcon: ({ color }) => <TabIcon icon="👥" color={color} />,
+          title: 'AMIGOS',
+          tabBarIcon: ({ color, focused }) => <TabButton icon="users" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="perfil"
         options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color }) => <TabIcon icon="🙂" color={color} />,
+          title: 'PERFIL',
+          tabBarIcon: ({ color, focused }) => <TabButton icon="person" color={color} focused={focused} />,
         }}
       />
     </Tabs>
@@ -69,5 +86,6 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  icon: { fontSize: 20 },
+  tabItem: { alignItems: 'center', gap: 4 },
+  tick: { width: 16, height: 3 },
 });

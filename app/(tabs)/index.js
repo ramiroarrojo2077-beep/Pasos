@@ -1,37 +1,39 @@
 import React, { useMemo } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import PixelIcon from '../../src/components/PixelIcon';
 import {
   Avatar,
   Badge,
   Body,
   Button,
-  Card,
+  Caption,
+  IconButton,
   Muted,
-  PixelText,
-  ProgressBar,
+  Panel,
+  Score,
   Screen,
   SectionHeader,
+  SegmentBar,
 } from '../../src/components/ui';
 import PlacesMap from '../../src/components/PlacesMap';
 import PlaceRow from '../../src/components/PlaceRow';
-import { useSteps } from '../../src/state/steps';
 import { usePlaces } from '../../src/state/places';
-import { ME, buildRanking, stepsInRange, tournamentStatus, useStore } from '../../src/state/store';
-import { colors, radius, spacing } from '../../src/theme';
+import { useSteps } from '../../src/state/steps';
+import { ME, buildRanking, tournamentStatus, useStore } from '../../src/state/store';
+import { colors, spacing, type } from '../../src/theme';
 import { dayKey, daysLeft, lastNDays, shortWeekday } from '../../src/utils/dates';
-import { formatNumber, stepsToKcal, stepsToKm } from '../../src/utils/format';
+import { formatNumber, stepsToKcal, stepsToKm, arcade } from '../../src/utils/format';
 
 export default function Home() {
   const router = useRouter();
-  const store = useStore();
-  const { profile, history, friends, tournaments, addSteps } = store;
-  const { available, manualMode } = useSteps();
+  const { profile, history, friends, tournaments, addSteps } = useStore();
+  const { manualMode } = useSteps();
   const { places, center, loading } = usePlaces();
 
   const today = history[dayKey()] || 0;
   const goal = profile.goal || 10000;
-  const pct = Math.min(100, Math.round((today / goal) * 100));
+  const pct = Math.min(999, Math.round((today / goal) * 100));
 
   const week = useMemo(() => {
     const days = lastNDays(7);
@@ -61,38 +63,55 @@ export default function Home() {
     <Screen scroll style={styles.screen}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Avatar emoji={profile.avatar} size={46} active />
-          <View>
-            <Text style={styles.hello}>¡Hola, {profile.name || 'Caminante'}!</Text>
-            <Muted>{pct >= 100 ? '¡Meta cumplida hoy! 🎉' : `Vas ${pct}% de tu meta`}</Muted>
+          <Avatar avatar={profile.avatar} size={44} active />
+          <View style={styles.headerText}>
+            <Caption color={colors.cyan}>Jugador</Caption>
+            <Text style={[type.title, styles.playerName]} numberOfLines={1}>
+              {arcade(profile.name || 'Jugador 1')}
+            </Text>
           </View>
         </View>
-        <Pressable onPress={() => router.push('/perfil')} hitSlop={10}>
-          <Text style={styles.gear}>⚙️</Text>
-        </Pressable>
+        <IconButton icon="gear" color={colors.textDim} onPress={() => router.push('/perfil')} />
       </View>
 
-      <Card glow style={styles.stepsCard}>
-        <View style={styles.stepsTop}>
-          <Text style={styles.shoe}>👟</Text>
-          <View style={styles.stepsInfo}>
-            <Muted>Tus pasos hoy</Muted>
-            <PixelText style={styles.stepsNumber}>{formatNumber(today)}</PixelText>
+      {/* Marcador principal */}
+      <Panel tone="neon" style={styles.scoreCard}>
+        <View style={styles.scoreTop}>
+          <View style={styles.scoreLeft}>
+            <Caption color={colors.textFaint}>Pasos de hoy</Caption>
+            <Score style={styles.scoreNumber}>{formatNumber(today)}</Score>
+          </View>
+          <View style={styles.scoreRight}>
+            <PixelIcon name="shoe" size={38} color={colors.lime} />
+            <Badge label={`${pct}%`} color={pct >= 100 ? colors.lime : colors.cyan} />
           </View>
         </View>
-        <ProgressBar value={today} max={goal} height={16} />
-        <View style={styles.stepsMetaRow}>
-          <Muted>de {formatNumber(goal)}</Muted>
-          <Muted>
-            {stepsToKm(today).toFixed(2).replace('.', ',')} km · {stepsToKcal(today)} kcal
-          </Muted>
+
+        <SegmentBar value={today} max={goal} segments={20} height={16} />
+
+        <View style={styles.scoreMeta}>
+          <View style={styles.metaItem}>
+            <PixelIcon name="target" size={12} color={colors.textFaint} />
+            <Text style={[type.tiny, styles.metaText]}>META {formatNumber(goal)}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <PixelIcon name="pin" size={12} color={colors.textFaint} />
+            <Text style={[type.tiny, styles.metaText]}>
+              {stepsToKm(today).toFixed(2).replace('.', ',')} KM
+            </Text>
+          </View>
+          <View style={styles.metaItem}>
+            <PixelIcon name="flame" size={12} color={colors.textFaint} />
+            <Text style={[type.tiny, styles.metaText]}>{stepsToKcal(today)} KCAL</Text>
+          </View>
         </View>
-        {manualMode || available === false ? (
+
+        {manualMode ? (
           <View style={styles.manualBox}>
             <Muted style={styles.manualText}>
               {Platform.OS === 'web'
-                ? 'En la web no hay podómetro: cargá tus pasos a mano o abrí la app en el teléfono.'
-                : 'Este dispositivo no tiene podómetro. Podés cargar tus pasos a mano.'}
+                ? 'El navegador no tiene podómetro. Cargá los pasos a mano o abrí la app en el teléfono.'
+                : 'Este dispositivo no tiene podómetro. Podés cargar los pasos a mano.'}
             </Muted>
             <View style={styles.manualButtons}>
               {[500, 1000, 2500].map((n) => (
@@ -100,6 +119,7 @@ export default function Home() {
                   key={n}
                   label={`+${n}`}
                   variant="dark"
+                  size="sm"
                   style={styles.manualBtn}
                   onPress={() => addSteps(n)}
                 />
@@ -107,94 +127,137 @@ export default function Home() {
             </View>
           </View>
         ) : null}
-      </Card>
+      </Panel>
 
-      <View style={styles.weekRow}>
-        {week.map((d) => (
-          <View key={d.key} style={styles.weekItem}>
-            <View style={styles.weekBarTrack}>
-              <View
-                style={[
-                  styles.weekBarFill,
-                  {
-                    height: `${Math.max(4, (d.steps / d.max) * 100)}%`,
-                    backgroundColor: d.steps >= goal ? colors.lime : colors.blue,
-                  },
-                ]}
-              />
-            </View>
-            <Muted style={styles.weekLabel}>{shortWeekday(d.key)}</Muted>
-          </View>
-        ))}
-      </View>
+      {/* Semana */}
+      <Panel tone="dark" style={styles.weekCard}>
+        <Caption>Últimos 7 días</Caption>
+        <View style={styles.weekRow}>
+          {week.map((d) => {
+            const hit = d.steps >= goal;
+            return (
+              <View key={d.key} style={styles.weekItem}>
+                <View style={styles.weekTrack}>
+                  <View
+                    style={[
+                      styles.weekFill,
+                      {
+                        height: `${Math.max(3, (d.steps / d.max) * 100)}%`,
+                        backgroundColor:
+                          d.steps === 0 ? colors.borderDim : hit ? colors.lime : colors.cyan,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={[type.tiny, styles.weekLabel]}>
+                  {shortWeekday(d.key).toUpperCase()}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </Panel>
 
+      {/* Rivales */}
       <View style={styles.section}>
         <SectionHeader
-          title="Con tus amigos"
+          title="Rivales de hoy"
           actionLabel="Ver todos"
+          color={colors.magenta}
           onAction={() => router.push('/amigos')}
         />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friendsRow}>
-          {friendsToday.map((f) => (
+          {friendsToday.map((f, i) => (
             <Pressable key={f.id} style={styles.friend} onPress={() => router.push('/amigos')}>
-              <Avatar emoji={f.avatar} size={54} />
-              <Text style={styles.friendName}>{f.name}</Text>
-              <Text style={styles.friendSteps}>{formatNumber(f.steps)}</Text>
+              <View style={styles.friendRank}>
+                <Text style={[type.tiny, { color: colors.textFaint }]}>{i + 1}</Text>
+              </View>
+              <Avatar avatar={f.avatar} size={50} />
+              <Text style={[type.tiny, styles.friendName]} numberOfLines={1}>
+                {f.name.toUpperCase()}
+              </Text>
+              <Text style={[type.tiny, styles.friendSteps]}>{formatNumber(f.steps)}</Text>
             </Pressable>
           ))}
           <Pressable style={styles.friend} onPress={() => router.push('/agregar-amigo')}>
+            <View style={styles.friendRank} />
             <View style={styles.addFriend}>
-              <Text style={styles.addFriendIcon}>+</Text>
+              <PixelIcon name="plus" size={20} color={colors.textDim} />
             </View>
-            <Text style={styles.friendName}>Agregar</Text>
+            <Text style={[type.tiny, styles.friendName]}>SUMAR</Text>
           </Pressable>
         </ScrollView>
       </View>
 
+      {/* Torneo activo */}
       {activeTournament ? (
-        <Card
+        <Panel
+          tone="magenta"
           style={styles.tournamentCard}
           onPress={() => router.push(`/torneo/${activeTournament.id}`)}
         >
           <View style={styles.tournamentTop}>
-            <Text style={styles.trophy}>{activeTournament.emoji || '🏆'}</Text>
+            <PixelIcon name={activeTournament.icon || 'trophy'} size={28} color={colors.magenta} />
             <View style={styles.flex}>
-              <Text style={styles.tournamentName}>{activeTournament.name}</Text>
-              <Muted>
-                Quedan {daysLeft(activeTournament.endISO)} días · {activeTournament.participantIds.length} jugando
-              </Muted>
+              <Caption color={colors.magenta}>Torneo en curso</Caption>
+              <Text style={[type.title, styles.tournamentName]} numberOfLines={1}>
+                {arcade(activeTournament.name)}
+              </Text>
             </View>
-            <Badge label={myPosition ? `${myPosition}º` : '—'} color={colors.gold} />
+            <View style={styles.positionBox}>
+              <Text style={[type.scoreSm, { color: colors.gold }]}>
+                {myPosition ? `${myPosition}º` : '—'}
+              </Text>
+              <Caption color={colors.textFaint}>puesto</Caption>
+            </View>
           </View>
+
           <View style={styles.podium}>
-            {ranking.slice(0, 3).map((r) => (
+            {ranking.slice(0, 3).map((r, i) => (
               <View key={r.id} style={styles.podiumItem}>
-                <Avatar emoji={r.avatar} size={38} active={r.isMe} />
-                <Text style={styles.podiumName} numberOfLines={1}>
-                  {r.name}
+                {i === 0 ? <PixelIcon name="crown" size={14} color={colors.gold} /> : <View style={{ height: 14 }} />}
+                <Avatar avatar={r.avatar} size={36} active={r.isMe} />
+                <Text style={[type.tiny, styles.podiumName]} numberOfLines={1}>
+                  {r.name.toUpperCase()}
                 </Text>
-                <Text style={[styles.podiumSteps, r.isMe && { color: colors.lime }]}>
-                  {formatNumber(r.steps)}
-                </Text>
+                <Text style={[type.tiny, styles.podiumSteps]}>{formatNumber(r.steps)}</Text>
               </View>
             ))}
           </View>
-        </Card>
+
+          <View style={styles.tournamentFoot}>
+            <PixelIcon name="clock" size={12} color={colors.textFaint} />
+            <Text style={[type.tiny, styles.metaText]}>
+              QUEDAN {daysLeft(activeTournament.endISO)} DÍAS
+            </Text>
+            <View style={styles.flex} />
+            <PixelIcon name="users" size={12} color={colors.textFaint} />
+            <Text style={[type.tiny, styles.metaText]}>
+              {activeTournament.participantIds.length} EN JUEGO
+            </Text>
+          </View>
+        </Panel>
       ) : (
-        <Card style={styles.tournamentCard}>
-          <Text style={styles.tournamentName}>Todavía no hay torneos</Text>
-          <Muted style={{ marginVertical: spacing(2) }}>
+        <Panel style={styles.tournamentCard}>
+          <Caption>Sin torneos</Caption>
+          <Body style={{ marginVertical: spacing(2) }}>
             Armá uno y competí con tus amigos por la mayor cantidad de pasos.
-          </Muted>
-          <Button label="Crear torneo" icon="🏆" onPress={() => router.push('/torneo/nuevo')} />
-        </Card>
+          </Body>
+          <Button label="Crear torneo" icon="trophy" onPress={() => router.push('/torneo/nuevo')} />
+        </Panel>
       )}
 
+      {/* Mapa */}
       <View style={styles.section}>
-        <SectionHeader title="Cerca tuyo" actionLabel="Ver mapa" onAction={() => router.push('/mapa')} />
-        <Card style={styles.mapCard}>
+        <SectionHeader
+          title="Cerca tuyo"
+          actionLabel="Ver mapa"
+          color={colors.cyan}
+          onAction={() => router.push('/mapa')}
+        />
+        <Panel tone="dark" style={styles.mapCard}>
           <View style={styles.mapWrap}>
-            <PlacesMap center={center} places={places.slice(0, 12)} />
+            <PlacesMap center={center} places={places.slice(0, 12)} showTag={false} />
           </View>
           {nearest ? (
             <PlaceRow
@@ -204,10 +267,10 @@ export default function Home() {
             />
           ) : (
             <Body style={styles.mapEmpty}>
-              {loading ? 'Buscando lugares cerca…' : 'No encontramos lugares cerca todavía.'}
+              {loading ? 'Buscando lugares…' : 'Todavía no encontramos lugares cerca.'}
             </Body>
           )}
-        </Card>
+        </Panel>
       </View>
     </Screen>
   );
@@ -220,76 +283,86 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing(3),
+    paddingVertical: spacing(4),
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
-  hello: { color: colors.text, fontSize: 18, fontWeight: '800' },
-  gear: { fontSize: 22 },
-  stepsCard: { gap: spacing(3) },
-  stepsTop: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
-  shoe: { fontSize: 40 },
-  stepsInfo: { flex: 1, gap: spacing(1) },
-  stepsNumber: { fontSize: 26, color: colors.lime },
-  stepsMetaRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing(3), flex: 1 },
+  headerText: { flex: 1, gap: 3 },
+  playerName: { fontSize: 12, color: colors.text },
+
+  scoreCard: { gap: spacing(3) },
+  scoreTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  scoreLeft: { gap: spacing(2) },
+  scoreRight: { alignItems: 'center', gap: spacing(2) },
+  scoreNumber: { fontSize: 30, lineHeight: 36 },
+  scoreMeta: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing(2) },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) },
+  metaText: { color: colors.textFaint, letterSpacing: 0.6 },
   manualBox: {
     borderTopWidth: 2,
-    borderTopColor: colors.borderSoft,
+    borderTopColor: colors.borderDim,
     paddingTop: spacing(3),
     gap: spacing(3),
   },
-  manualText: { fontSize: 12 },
-  manualButtons: { flexDirection: 'row', gap: spacing(2) },
-  manualBtn: { flex: 1, minHeight: 42 },
-  weekRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing(2),
-    marginTop: spacing(4),
-  },
+  manualText: { fontSize: 11, lineHeight: 16 },
+  manualButtons: { flexDirection: 'row', gap: spacing(3) },
+  manualBtn: { flex: 1 },
+
+  weekCard: { marginTop: spacing(5), gap: spacing(3), padding: spacing(3) },
+  weekRow: { flexDirection: 'row', gap: spacing(2) },
   weekItem: { flex: 1, alignItems: 'center', gap: spacing(1.5) },
-  weekBarTrack: {
+  weekTrack: {
     width: '100%',
-    height: 56,
-    backgroundColor: colors.cardAlt,
-    borderRadius: radius.sm,
+    height: 52,
+    backgroundColor: colors.bgDeep,
     borderWidth: 2,
-    borderColor: colors.borderSoft,
+    borderColor: colors.borderDim,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
-  weekBarFill: { width: '100%' },
-  weekLabel: { fontSize: 11 },
+  weekFill: { width: '100%' },
+  weekLabel: { color: colors.textFaint, fontSize: 9 },
+
   section: { marginTop: spacing(6) },
-  friendsRow: { gap: spacing(4), paddingRight: spacing(4) },
-  friend: { alignItems: 'center', gap: spacing(1), width: 68 },
-  friendName: { color: colors.text, fontSize: 12, fontWeight: '700' },
-  friendSteps: { color: colors.lime, fontSize: 12, fontWeight: '800' },
+  friendsRow: { gap: spacing(3), paddingRight: spacing(4), paddingVertical: spacing(1) },
+  friend: { alignItems: 'center', gap: spacing(1.5), width: 64 },
+  friendRank: { height: 12, justifyContent: 'center' },
+  friendName: { color: colors.textDim, fontSize: 9 },
+  friendSteps: { color: colors.lime, fontSize: 10 },
   addFriend: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    borderWidth: 2,
+    width: 50,
+    height: 50,
+    borderWidth: 3,
     borderColor: colors.border,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.panelAlt,
   },
-  addFriendIcon: { color: colors.textSoft, fontSize: 24, fontWeight: '800' },
-  tournamentCard: { marginTop: spacing(6), gap: spacing(3) },
+
+  tournamentCard: { marginTop: spacing(6), gap: spacing(4) },
   tournamentTop: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
-  trophy: { fontSize: 30 },
-  tournamentName: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  tournamentName: { fontSize: 11, color: colors.text, marginTop: 3 },
+  positionBox: { alignItems: 'center', gap: 2 },
   podium: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     borderTopWidth: 2,
-    borderTopColor: colors.borderSoft,
-    paddingTop: spacing(3),
+    borderTopColor: colors.borderDim,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.borderDim,
+    paddingVertical: spacing(3),
   },
-  podiumItem: { alignItems: 'center', gap: spacing(1), width: 86 },
-  podiumName: { color: colors.textSoft, fontSize: 12, fontWeight: '700' },
-  podiumSteps: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  podiumItem: { alignItems: 'center', gap: spacing(1), width: 82 },
+  podiumName: { color: colors.textDim, fontSize: 9 },
+  podiumSteps: { color: colors.text, fontSize: 10 },
+  tournamentFoot: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) },
+
   mapCard: { padding: spacing(3), gap: spacing(3) },
-  mapWrap: { height: 180, borderRadius: radius.md, overflow: 'hidden' },
+  mapWrap: {
+    height: 176,
+    borderWidth: 3,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
   mapEmpty: { textAlign: 'center', paddingVertical: spacing(3) },
 });

@@ -1,21 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Chip, Muted, Screen } from '../../src/components/ui';
+import PixelIcon from '../../src/components/PixelIcon';
+import { Caption, Chip, IconButton, Muted, Panel, Screen } from '../../src/components/ui';
 import PlacesMap from '../../src/components/PlacesMap';
 import PlaceRow from '../../src/components/PlaceRow';
 import { usePlaces } from '../../src/state/places';
 import { useStore } from '../../src/state/store';
 import { CATEGORIES } from '../../src/data/demo';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, spacing, type } from '../../src/theme';
 
 export default function Mapa() {
   const router = useRouter();
@@ -32,20 +25,29 @@ export default function Mapa() {
     return list;
   }, [places, category, onlyFavs, favorites]);
 
-  const open = (place) => router.push(`/lugar/${encodeURIComponent(place.id)}`);
-
   return (
     <Screen style={styles.screen}>
       <View style={styles.header}>
-        <Text style={styles.title}>Mapa</Text>
-        <Pressable onPress={() => setOnlyFavs((v) => !v)} hitSlop={10}>
-          <Text style={[styles.filterIcon, onlyFavs && { color: colors.pink }]}>
-            {onlyFavs ? '❤️' : '🤍'}
-          </Text>
-        </Pressable>
+        <View>
+          <Caption color={colors.cyan}>Zona</Caption>
+          <Text style={[type.title, styles.title]}>MAPA</Text>
+        </View>
+        <View style={styles.headerActions}>
+          <View style={styles.counter}>
+            <Text style={[type.tiny, { color: colors.textFaint }]}>
+              {filtered.length} LUGARES
+            </Text>
+          </View>
+          <IconButton
+            icon="heart"
+            size={20}
+            color={onlyFavs ? colors.magenta : colors.textFaint}
+            onPress={() => setOnlyFavs((v) => !v)}
+          />
+        </View>
       </View>
 
-      <View style={styles.mapWrap}>
+      <View style={styles.mapFrame}>
         <PlacesMap
           center={center}
           places={filtered}
@@ -53,12 +55,14 @@ export default function Mapa() {
           onSelect={(p) => setSelected(p.id)}
         />
         <Pressable style={styles.locateBtn} onPress={locate}>
-          <Text style={styles.locateIcon}>➤</Text>
+          <PixelIcon name="navigate" size={16} color={colors.lime} />
         </Pressable>
         {loading ? (
           <View style={styles.loadingPill}>
             <ActivityIndicator size="small" color={colors.lime} />
-            <Text style={styles.loadingText}>Buscando lugares…</Text>
+            <Text style={[type.tiny, { color: colors.textDim, letterSpacing: 0.8 }]}>
+              BUSCANDO…
+            </Text>
           </View>
         ) : null}
       </View>
@@ -81,18 +85,20 @@ export default function Mapa() {
       </ScrollView>
 
       {locationDenied ? (
-        <Pressable onPress={locate} style={styles.notice}>
-          <Text style={styles.noticeText}>
-            📍 Sin permiso de ubicación te mostramos el centro por defecto. Tocá para reintentar.
-          </Text>
-        </Pressable>
+        <Panel tone="dark" style={styles.notice} onPress={locate}>
+          <PixelIcon name="pin" size={16} color={colors.amber} />
+          <Muted style={styles.noticeText}>
+            Sin permiso de ubicación mostramos una zona por defecto. Tocá para reintentar.
+          </Muted>
+        </Panel>
       ) : null}
       {source === 'demo' && !loading ? (
-        <Pressable onPress={reload} style={styles.notice}>
-          <Text style={styles.noticeText}>
-            🛰️ Sin conexión al buscador de lugares: estos son ejemplos. Tocá para reintentar.
-          </Text>
-        </Pressable>
+        <Panel tone="dark" style={styles.notice} onPress={reload}>
+          <PixelIcon name="globe" size={16} color={colors.amber} />
+          <Muted style={styles.noticeText}>
+            Sin conexión al buscador: estos son lugares de ejemplo. Tocá para reintentar.
+          </Muted>
+        </Panel>
       ) : null}
 
       <FlatList
@@ -100,18 +106,18 @@ export default function Mapa() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={{ height: spacing(2.5) }} />}
+        ItemSeparatorComponent={() => <View style={{ height: spacing(3) }} />}
         ListEmptyComponent={
           loading ? (
             <View style={styles.loadingList}>
               <ActivityIndicator color={colors.lime} />
-              <Muted style={styles.empty}>Buscando cafeterías y comida cerca tuyo…</Muted>
+              <Muted style={styles.empty}>Escaneando la zona…</Muted>
             </View>
           ) : (
             <Muted style={styles.empty}>
               {onlyFavs
-                ? 'Todavía no guardaste favoritos. Tocá el corazón en un lugar.'
-                : 'No hay lugares de esta categoría cerca.'}
+                ? 'Todavía no guardaste favoritos. Tocá el corazón en la ficha de un lugar.'
+                : 'No hay lugares de esta categoría en el radio de búsqueda.'}
             </Muted>
           )
         }
@@ -121,7 +127,7 @@ export default function Mapa() {
             active={item.id === selected}
             onPress={() => {
               setSelected(item.id);
-              open(item);
+              router.push(`/lugar/${encodeURIComponent(item.id)}`);
             }}
           />
         )}
@@ -134,33 +140,36 @@ const styles = StyleSheet.create({
   screen: { paddingHorizontal: spacing(4) },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
-    paddingVertical: spacing(3),
+    paddingVertical: spacing(4),
   },
-  title: { color: colors.text, fontSize: 20, fontWeight: '800' },
-  filterIcon: { fontSize: 20 },
-  mapWrap: {
-    height: 260,
-    borderRadius: radius.md,
-    overflow: 'hidden',
+  title: { fontSize: 16, color: colors.text, marginTop: 4 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
+  counter: {
     borderWidth: 2,
-    borderColor: colors.borderSoft,
+    borderColor: colors.borderDim,
+    paddingHorizontal: spacing(2),
+    paddingVertical: spacing(1),
+  },
+  mapFrame: {
+    height: 248,
+    borderWidth: 3,
+    borderColor: colors.border,
+    overflow: 'hidden',
   },
   locateBtn: {
     position: 'absolute',
     right: spacing(3),
     bottom: spacing(3),
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.card,
-    borderWidth: 2,
+    width: 38,
+    height: 38,
+    backgroundColor: colors.panel,
+    borderWidth: 3,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  locateIcon: { color: colors.lime, fontSize: 16, fontWeight: '800' },
   loadingPill: {
     position: 'absolute',
     top: spacing(3),
@@ -168,24 +177,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(2),
-    backgroundColor: 'rgba(7,12,24,0.85)',
+    backgroundColor: colors.bgDeep,
+    borderWidth: 2,
+    borderColor: colors.border,
     paddingHorizontal: spacing(3),
     paddingVertical: spacing(1.5),
-    borderRadius: radius.pill,
   },
-  loadingText: { color: colors.textSoft, fontSize: 12, fontWeight: '700' },
-  chipsWrap: { flexGrow: 0, marginTop: spacing(3) },
+  chipsWrap: { flexGrow: 0, marginTop: spacing(4) },
   chips: { gap: spacing(2), paddingRight: spacing(4) },
   notice: {
     marginTop: spacing(3),
-    backgroundColor: colors.cardAlt,
-    borderRadius: radius.sm,
-    borderWidth: 2,
-    borderColor: colors.borderSoft,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
     padding: spacing(3),
   },
-  noticeText: { color: colors.textSoft, fontSize: 12 },
+  noticeText: { flex: 1, fontSize: 11, lineHeight: 16 },
   list: { paddingTop: spacing(4), paddingBottom: spacing(6) },
-  empty: { textAlign: 'center', paddingVertical: spacing(4) },
-  loadingList: { alignItems: 'center', paddingVertical: spacing(8), gap: spacing(2) },
+  empty: { textAlign: 'center', paddingVertical: spacing(4), paddingHorizontal: spacing(6) },
+  loadingList: { alignItems: 'center', paddingVertical: spacing(8), gap: spacing(3) },
 });

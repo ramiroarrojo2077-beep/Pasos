@@ -1,26 +1,31 @@
 import React, { useMemo } from 'react';
-import { Alert, FlatList, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Share, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import PixelIcon from '../../src/components/PixelIcon';
 import {
+  Avatar,
   Badge,
   Body,
   Button,
-  Card,
+  Caption,
+  Display,
+  IconButton,
   Muted,
-  PixelText,
+  Panel,
+  Score,
   Screen,
 } from '../../src/components/ui';
 import RankRow from '../../src/components/RankRow';
 import { ME, buildRanking, tournamentStatus, useStore } from '../../src/state/store';
-import { colors, spacing } from '../../src/theme';
+import { colors, spacing, type } from '../../src/theme';
 import { daysLeft, formatRange } from '../../src/utils/dates';
 import { formatNumber } from '../../src/utils/format';
 
 const STATUS = {
   activo: { label: 'En juego', color: colors.lime },
-  proximo: { label: 'Por empezar', color: colors.blue },
-  terminado: { label: 'Terminado', color: colors.muted },
+  proximo: { label: 'Por empezar', color: colors.cyan },
+  terminado: { label: 'Terminado', color: colors.textFaint },
 };
 
 export default function TorneoDetalle() {
@@ -38,9 +43,7 @@ export default function TorneoDetalle() {
   if (!tournament) {
     return (
       <Screen style={styles.screen}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>←</Text>
-        </Pressable>
+        <IconButton icon="chevron" flip onPress={() => router.back()} />
         <Body style={styles.notFound}>Este torneo ya no existe.</Body>
       </Screen>
     );
@@ -53,7 +56,7 @@ export default function TorneoDetalle() {
   const total = ranking.reduce((a, r) => a + r.steps, 0);
 
   const invite = async () => {
-    const text = `¡Sumate a "${tournament.name}" en Pasos! Código: ${tournament.code}`;
+    const text = `Sumate a "${tournament.name}" en Pasos. Código: ${tournament.code}`;
     try {
       await Share.share({ message: text });
     } catch (err) {
@@ -78,13 +81,10 @@ export default function TorneoDetalle() {
 
   return (
     <Screen style={styles.screen}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>←</Text>
-        </Pressable>
-        <Pressable onPress={confirmDelete} hitSlop={10}>
-          <Text style={styles.trash}>🗑️</Text>
-        </Pressable>
+      <View style={styles.topBar}>
+        <IconButton icon="chevron" flip onPress={() => router.back()} />
+        <Caption color={colors.textFaint}>Torneo</Caption>
+        <IconButton icon="trash" size={18} color={colors.textFaint} onPress={confirmDelete} />
       </View>
 
       <FlatList
@@ -92,49 +92,74 @@ export default function TorneoDetalle() {
         keyExtractor={(r) => r.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: spacing(2.5) }} />}
+        ItemSeparatorComponent={() => <View style={{ height: spacing(3) }} />}
         ListHeaderComponent={
-          <View style={styles.headerBlock}>
-            <Text style={styles.emoji}>{tournament.emoji || '🏆'}</Text>
-            <PixelText style={styles.name}>{tournament.name}</PixelText>
-            <View style={styles.badges}>
-              <Badge label={st.label} color={st.color} />
-              <Badge label={formatRange(tournament.startISO, tournament.endISO)} color={colors.blue} />
-              {status === 'activo' ? (
-                <Badge label={`Quedan ${daysLeft(tournament.endISO)} días`} color={colors.orange} />
-              ) : null}
+          <View style={styles.head}>
+            <View style={styles.titleRow}>
+              <View style={[styles.iconBox, { borderColor: st.color }]}>
+                <PixelIcon name={tournament.icon || 'trophy'} size={32} color={st.color} />
+              </View>
+              <View style={styles.flex}>
+                <Display style={styles.name}>{tournament.name.toUpperCase()}</Display>
+                <View style={styles.badges}>
+                  <Badge label={st.label} color={st.color} />
+                  <Badge
+                    label={formatRange(tournament.startISO, tournament.endISO)}
+                    color={colors.cyan}
+                    icon="clock"
+                  />
+                </View>
+              </View>
             </View>
 
             {tournament.prize ? (
-              <Card style={styles.prizeCard}>
-                <Text style={styles.prizeText}>🎁 {tournament.prize}</Text>
-              </Card>
+              <Panel tone="dark" style={styles.prizeCard}>
+                <PixelIcon name="star" size={18} color={colors.amber} />
+                <View style={styles.flex}>
+                  <Caption color={colors.amber}>Premio</Caption>
+                  <Body style={styles.prizeText}>{tournament.prize}</Body>
+                </View>
+              </Panel>
             ) : null}
 
             <View style={styles.statsRow}>
-              <Stat label="Tu puesto" value={me ? `${me.position}º` : '—'} highlight />
-              <Stat label="Tus pasos" value={formatNumber(me?.steps || 0)} />
-              <Stat label="Total del grupo" value={formatNumber(total)} />
+              <Stat label="Tu puesto" value={me ? `${me.position}º` : '—'} color={colors.gold} />
+              <Stat label="Tus pasos" value={formatNumber(me?.steps || 0)} color={colors.lime} />
+              <Stat label="Grupo" value={formatNumber(total)} color={colors.cyan} />
             </View>
 
             {status === 'activo' && me && leader && me.id !== leader.id ? (
-              <Muted style={styles.gap}>
-                Te faltan {formatNumber(leader.steps - me.steps)} pasos para alcanzar a {leader.name}.
-              </Muted>
+              <Panel tone="dark" style={styles.gapCard}>
+                <PixelIcon name="flame" size={16} color={colors.magenta} />
+                <Body style={styles.gapText}>
+                  Te faltan {formatNumber(leader.steps - me.steps)} pasos para alcanzar a{' '}
+                  {leader.name}. Quedan {daysLeft(tournament.endISO)} días.
+                </Body>
+              </Panel>
             ) : null}
             {status === 'terminado' && leader ? (
-              <Muted style={styles.gap}>🏅 Ganó {leader.name} con {formatNumber(leader.steps)} pasos.</Muted>
+              <Panel tone="dark" style={styles.gapCard}>
+                <PixelIcon name="crown" size={16} color={colors.gold} />
+                <Body style={styles.gapText}>
+                  Ganó {leader.name} con {formatNumber(leader.steps)} pasos.
+                </Body>
+              </Panel>
             ) : null}
 
-            <Card style={styles.codeCard} onPress={invite}>
+            <Panel tone="cyan" style={styles.codeCard}>
               <View style={styles.flex}>
-                <Muted>Código de invitación</Muted>
-                <Text style={styles.code}>{tournament.code}</Text>
+                <Caption color={colors.cyan}>Código de invitación</Caption>
+                <Score style={styles.code}>{tournament.code}</Score>
               </View>
-              <Button label="Invitar" icon="📤" onPress={invite} style={styles.inviteBtn} />
-            </Card>
+              <Button label="Invitar" icon="share" size="sm" onPress={invite} />
+            </Panel>
 
-            <Text style={styles.rankTitle}>Tabla de posiciones</Text>
+            <View style={styles.rankHeader}>
+              <View style={styles.tick} />
+              <Text style={[type.title, { fontSize: 11, color: colors.text }]}>
+                TABLA DE POSICIONES
+              </Text>
+            </View>
           </View>
         }
         renderItem={({ item }) => <RankRow entry={item} leaderSteps={leader?.steps || 1} />}
@@ -143,68 +168,53 @@ export default function TorneoDetalle() {
   );
 }
 
-function Stat({ label, value, highlight }) {
+function Stat({ label, value, color }) {
   return (
-    <View style={styles.stat}>
-      <Text style={[styles.statValue, highlight && { color: colors.lime }]}>{value}</Text>
-      <Muted style={styles.statLabel}>{label}</Muted>
-    </View>
+    <Panel tone="dark" style={styles.stat} shadow={false}>
+      <Score small style={{ color, fontSize: 11 }}>
+        {value}
+      </Score>
+      <Caption color={colors.textFaint}>{label}</Caption>
+    </Panel>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { paddingHorizontal: spacing(4) },
   flex: { flex: 1 },
-  header: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing(3),
   },
-  back: { color: colors.text, fontSize: 24, fontWeight: '800' },
-  trash: { fontSize: 20 },
-  headerBlock: { alignItems: 'center', gap: spacing(2), paddingBottom: spacing(4) },
-  emoji: { fontSize: 44 },
-  name: { fontSize: 15, color: colors.lime, textAlign: 'center', lineHeight: 24 },
-  badges: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing(2),
+  list: { paddingBottom: spacing(8) },
+  head: { gap: spacing(4), paddingBottom: spacing(4) },
+  titleRow: { flexDirection: 'row', gap: spacing(3), alignItems: 'center' },
+  iconBox: {
+    width: 56,
+    height: 56,
+    borderWidth: 3,
+    alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.panelAlt,
+  },
+  name: { fontSize: 14, lineHeight: 22 },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2), marginTop: spacing(2) },
+  prizeCard: { flexDirection: 'row', alignItems: 'center', gap: spacing(3), padding: spacing(3) },
+  prizeText: { fontSize: 12, color: colors.textDim, marginTop: 3 },
+  statsRow: { flexDirection: 'row', gap: spacing(3) },
+  stat: { flex: 1, padding: spacing(3), gap: spacing(2), alignItems: 'center' },
+  gapCard: { flexDirection: 'row', alignItems: 'center', gap: spacing(3), padding: spacing(3) },
+  gapText: { flex: 1, fontSize: 12 },
+  codeCard: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
+  code: { color: colors.cyan, fontSize: 20, letterSpacing: 4, marginTop: spacing(2) },
+  rankHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(2),
     marginTop: spacing(2),
   },
-  prizeCard: { width: '100%', marginTop: spacing(3), paddingVertical: spacing(3) },
-  prizeText: { color: colors.textSoft, fontSize: 14, textAlign: 'center', fontWeight: '700' },
-  statsRow: { flexDirection: 'row', gap: spacing(3), marginTop: spacing(4), width: '100%' },
-  stat: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: colors.borderSoft,
-    padding: spacing(3),
-    alignItems: 'center',
-    gap: 2,
-  },
-  statValue: { color: colors.text, fontSize: 17, fontWeight: '900' },
-  statLabel: { fontSize: 10, textAlign: 'center' },
-  gap: { marginTop: spacing(3), textAlign: 'center' },
-  codeCard: {
-    width: '100%',
-    marginTop: spacing(4),
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing(3),
-  },
-  code: { color: colors.lime, fontSize: 22, fontWeight: '900', letterSpacing: 3 },
-  inviteBtn: { minHeight: 42, paddingHorizontal: spacing(4) },
-  rankTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '800',
-    alignSelf: 'flex-start',
-    marginTop: spacing(5),
-  },
-  list: { paddingBottom: spacing(8) },
+  tick: { width: 4, height: 14, backgroundColor: colors.lime },
   notFound: { textAlign: 'center', marginTop: spacing(10) },
 });

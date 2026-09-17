@@ -1,52 +1,77 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing } from '../theme';
+import PixelIcon from './PixelIcon';
+import { Avatar, SegmentBar } from './ui';
+import { colors, spacing, type } from '../theme';
 import { formatNumber } from '../utils/format';
-import { Avatar, ProgressBar } from './ui';
 
-const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' };
+const PODIUM = { 1: colors.gold, 2: colors.silver, 3: colors.bronze };
 
 export default function RankRow({ entry, leaderSteps }) {
-  const medal = MEDALS[entry.position];
+  const podium = PODIUM[entry.position];
   return (
-    <View style={[styles.row, entry.isMe && styles.me]}>
-      <View style={styles.position}>
-        <Text style={styles.positionText}>{medal || `${entry.position}º`}</Text>
-      </View>
-      <Avatar emoji={entry.avatar} size={40} active={entry.isMe} />
-      <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>
-          {entry.name} {entry.isMe ? '(vos)' : ''}
+    <View style={styles.wrap}>
+      <View style={styles.shadow} pointerEvents="none" />
+      <View style={[styles.row, entry.isMe && styles.me]}>
+        <View style={styles.position}>
+          {entry.position === 1 ? (
+            <PixelIcon name="crown" size={18} color={colors.gold} />
+          ) : (
+            <Text style={[type.scoreSm, { color: podium || colors.textFaint, fontSize: 10 }]}>
+              {entry.position}
+            </Text>
+          )}
+        </View>
+        <Avatar avatar={entry.avatar} size={38} active={entry.isMe} />
+        <View style={styles.info}>
+          <Text style={[type.label, styles.name]} numberOfLines={1}>
+            {entry.name}
+            {entry.isMe ? '  ← VOS' : ''}
+          </Text>
+          <SegmentBar
+            value={entry.steps}
+            max={leaderSteps || 1}
+            segments={14}
+            height={10}
+            color={entry.isMe ? colors.lime : podium || colors.cyan}
+          />
+        </View>
+        <Text
+          style={[
+            type.scoreSm,
+            styles.steps,
+            { color: entry.isMe ? colors.lime : colors.text },
+          ]}
+        >
+          {formatNumber(entry.steps)}
         </Text>
-        <ProgressBar
-          value={entry.steps}
-          max={leaderSteps || 1}
-          height={10}
-          color={entry.isMe ? colors.lime : colors.blue}
-        />
       </View>
-      <Text style={[styles.steps, entry.isMe && { color: colors.lime }]}>
-        {formatNumber(entry.steps)}
-      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: { position: 'relative' },
+  shadow: {
+    position: 'absolute',
+    left: 4,
+    top: 4,
+    right: -4,
+    bottom: -4,
+    backgroundColor: colors.shadow,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing(3),
+    gap: spacing(2.5),
     padding: spacing(3),
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderWidth: 2,
-    borderColor: colors.borderSoft,
+    backgroundColor: colors.panel,
+    borderWidth: 3,
+    borderColor: colors.border,
   },
-  me: { borderColor: colors.lime, backgroundColor: 'rgba(200,247,81,0.06)' },
-  position: { width: 30, alignItems: 'center' },
-  positionText: { color: colors.textSoft, fontSize: 16, fontWeight: '800' },
+  me: { borderColor: colors.lime, backgroundColor: colors.panelLit },
+  position: { width: 22, alignItems: 'center' },
   info: { flex: 1, gap: spacing(1.5) },
-  name: { color: colors.text, fontSize: 15, fontWeight: '800' },
-  steps: { color: colors.text, fontSize: 15, fontWeight: '800', minWidth: 62, textAlign: 'right' },
+  name: { color: colors.text, fontSize: 12 },
+  steps: { fontSize: 10, minWidth: 54, textAlign: 'right' },
 });

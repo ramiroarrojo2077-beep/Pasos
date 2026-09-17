@@ -5,20 +5,21 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import PixelIcon from '../../src/components/PixelIcon';
 import {
   Avatar,
   Badge,
   Body,
   Button,
-  Card,
+  Caption,
   Divider,
   Muted,
-  PixelText,
+  Panel,
+  Score,
   Screen,
   SectionHeader,
 } from '../../src/components/ui';
@@ -26,9 +27,9 @@ import { useSteps } from '../../src/state/steps';
 import { openHealthConnect } from '../../src/services/steps';
 import { useStore } from '../../src/state/store';
 import { AVATARS } from '../../src/data/demo';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, spacing, type } from '../../src/theme';
 import { dayKey, lastNDays, shortWeekday } from '../../src/utils/dates';
-import { formatNumber, stepsToKcal, stepsToKm } from '../../src/utils/format';
+import { formatNumber, stepsToKcal, stepsToKm, arcade } from '../../src/utils/format';
 
 export default function Perfil() {
   const { profile, history, setProfile, addSteps, reset, favorites } = useStore();
@@ -48,8 +49,10 @@ export default function Perfil() {
   }, [history, profile.goal]);
 
   const week = lastNDays(7).map((d) => ({ key: d, steps: history[d] || 0 }));
+  const weekMax = Math.max(profile.goal, ...week.map((x) => x.steps));
+  const today = history[dayKey()] || 0;
 
-  const saveName = () => setProfile({ name: name.trim() || 'Caminante' });
+  const saveName = () => setProfile({ name: name.trim() || 'Jugador 1' });
   const saveGoal = () => {
     const parsed = Math.max(1000, Math.min(50000, parseInt(goal, 10) || 10000));
     setGoal(String(parsed));
@@ -57,7 +60,7 @@ export default function Perfil() {
   };
 
   const confirmReset = () => {
-    Alert.alert('Borrar todo', 'Se borran tu perfil, amigos y torneos de este teléfono.', [
+    Alert.alert('Borrar la partida', 'Se borran tu perfil, amigos y torneos de este teléfono.', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Borrar', style: 'destructive', onPress: reset },
     ]);
@@ -66,52 +69,65 @@ export default function Perfil() {
   return (
     <Screen scroll style={styles.screen}>
       <View style={styles.header}>
-        <Avatar emoji={profile.avatar} size={64} active />
+        <Avatar avatar={profile.avatar} size={62} active />
         <View style={styles.flex}>
-          <PixelText style={styles.name}>{profile.name || 'Caminante'}</PixelText>
-          <Muted>Código {profile.code}</Muted>
+          <Caption color={colors.cyan}>Jugador</Caption>
+          <Text style={[type.title, styles.name]} numberOfLines={1}>
+            {arcade(profile.name || 'Jugador 1')}
+          </Text>
+          <Muted>CÓDIGO {profile.code}</Muted>
         </View>
       </View>
 
       <View style={styles.statsGrid}>
-        <Stat label="Pasos 30 días" value={formatNumber(stats.total)} />
-        <Stat label="Promedio" value={formatNumber(stats.average)} />
-        <Stat label="Mejor día" value={formatNumber(stats.best)} />
-        <Stat label="Metas logradas" value={`${stats.goalsHit}`} />
+        <Stat label="Pasos 30 días" value={formatNumber(stats.total)} color={colors.lime} />
+        <Stat label="Promedio diario" value={formatNumber(stats.average)} color={colors.cyan} />
+        <Stat label="Mejor jornada" value={formatNumber(stats.best)} color={colors.magenta} />
+        <Stat label="Metas logradas" value={`${stats.goalsHit}`} color={colors.gold} />
       </View>
 
-      <Card style={styles.block}>
-        <SectionHeader title="Conteo de pasos" />
+      {/* Sensor */}
+      <Panel style={styles.block} tone={backgroundEnabled ? 'neon' : 'default'}>
+        <SectionHeader title="Sensor de pasos" color={backgroundEnabled ? colors.lime : colors.amber} />
         <View style={styles.statusRow}>
           <Badge
             label={backgroundEnabled ? 'Segundo plano activo' : 'Sólo con la app abierta'}
-            color={backgroundEnabled ? colors.lime : colors.orange}
+            color={backgroundEnabled ? colors.lime : colors.amber}
+            icon={backgroundEnabled ? 'check' : 'clock'}
           />
-          {syncing ? <Muted>sincronizando…</Muted> : null}
         </View>
         <Body style={styles.statusText}>{support?.label || 'Verificando sensor…'}</Body>
-        <Muted style={styles.batteryNote}>
-          🔋 No corremos nada en segundo plano: leemos el conteo que el propio
-          teléfono ya guarda, así que el consumo extra de batería es casi nulo.
-        </Muted>
+
+        <View style={styles.batteryRow}>
+          <PixelIcon name="battery" size={16} color={colors.lime} />
+          <Muted style={styles.batteryNote}>
+            No corremos procesos en segundo plano: leemos el conteo que el propio
+            teléfono ya guarda. El consumo extra de batería es prácticamente nulo.
+          </Muted>
+        </View>
+
         {error ? <Muted style={styles.error}>{error}</Muted> : null}
 
         <View style={styles.buttonsRow}>
           <Button
             label="Sincronizar"
-            icon="🔄"
+            icon="clock"
             variant="dark"
+            size="sm"
             style={styles.flexBtn}
             loading={syncing}
             onPress={() => sync(7)}
           />
           {!backgroundEnabled && Platform.OS !== 'web' ? (
-            <Button label="Conectar" icon="🔗" style={styles.flexBtn} onPress={connect} />
+            <Button label="Conectar" icon="check" size="sm" style={styles.flexBtn} onPress={connect} />
           ) : null}
         </View>
         {Platform.OS === 'android' && support?.mode === 'health-connect' ? (
-          <Pressable onPress={openHealthConnect}>
-            <Text style={styles.link}>Abrir ajustes de Health Connect →</Text>
+          <Pressable onPress={openHealthConnect} style={styles.link}>
+            <Text style={[type.tiny, { color: colors.lime, letterSpacing: 0.6 }]}>
+              ABRIR AJUSTES DE HEALTH CONNECT
+            </Text>
+            <PixelIcon name="chevron" size={10} color={colors.lime} />
           </Pressable>
         ) : null}
         {lastSync ? (
@@ -119,13 +135,14 @@ export default function Perfil() {
             Última sincronización: {lastSync.toLocaleTimeString()}
           </Muted>
         ) : null}
-      </Card>
+      </Panel>
 
-      <Card style={styles.block}>
-        <SectionHeader title="Tu semana" />
+      {/* Semana */}
+      <Panel style={styles.block} tone="dark">
+        <SectionHeader title="Tu semana" color={colors.cyan} />
         <View style={styles.weekRow}>
           {week.map((d) => {
-            const max = Math.max(profile.goal, ...week.map((x) => x.steps));
+            const hit = d.steps >= profile.goal;
             return (
               <View key={d.key} style={styles.weekItem}>
                 <View style={styles.weekTrack}>
@@ -133,38 +150,43 @@ export default function Perfil() {
                     style={[
                       styles.weekFill,
                       {
-                        height: `${Math.max(4, (d.steps / max) * 100)}%`,
+                        height: `${Math.max(3, (d.steps / weekMax) * 100)}%`,
                         backgroundColor:
-                          d.steps >= profile.goal ? colors.lime : colors.blue,
+                          d.steps === 0 ? colors.borderDim : hit ? colors.lime : colors.cyan,
                       },
                     ]}
                   />
                 </View>
-                <Muted style={styles.weekLabel}>{shortWeekday(d.key)}</Muted>
+                <Text style={[type.tiny, styles.weekLabel]}>
+                  {shortWeekday(d.key).toUpperCase()}
+                </Text>
               </View>
             );
           })}
         </View>
         <Divider style={{ marginVertical: spacing(3) }} />
-        <Muted>
-          Hoy: {formatNumber(history[dayKey()] || 0)} pasos ·{' '}
-          {stepsToKm(history[dayKey()] || 0).toFixed(2).replace('.', ',')} km ·{' '}
-          {stepsToKcal(history[dayKey()] || 0)} kcal
-        </Muted>
-      </Card>
+        <View style={styles.todayRow}>
+          <PixelIcon name="shoe" size={14} color={colors.lime} />
+          <Muted>
+            HOY {formatNumber(today)} · {stepsToKm(today).toFixed(2).replace('.', ',')} KM ·{' '}
+            {stepsToKcal(today)} KCAL
+          </Muted>
+        </View>
+      </Panel>
 
-      <Card style={styles.block}>
-        <SectionHeader title="Tus datos" />
-        <Text style={styles.label}>Nombre</Text>
+      {/* Datos */}
+      <Panel style={styles.block}>
+        <SectionHeader title="Tus datos" color={colors.magenta} />
+        <Caption>Nombre</Caption>
         <TextInput
           value={name}
           onChangeText={setName}
           onBlur={saveName}
           style={styles.input}
-          maxLength={18}
-          placeholderTextColor={colors.muted}
+          maxLength={14}
+          placeholderTextColor={colors.textFaint}
         />
-        <Text style={styles.label}>Meta diaria</Text>
+        <Caption>Meta diaria</Caption>
         <TextInput
           value={goal}
           onChangeText={(t) => setGoal(t.replace(/[^0-9]/g, ''))}
@@ -173,18 +195,19 @@ export default function Perfil() {
           style={styles.input}
           maxLength={5}
         />
-        <Text style={styles.label}>Avatar</Text>
+        <Caption>Personaje</Caption>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.avatars}>
           {AVATARS.map((a) => (
-            <Pressable key={a} onPress={() => setProfile({ avatar: a })}>
-              <Avatar emoji={a} size={46} active={a === profile.avatar} />
+            <Pressable key={a.id} onPress={() => setProfile({ avatar: a })}>
+              <Avatar avatar={a} size={46} active={a.id === profile.avatar?.id} />
             </Pressable>
           ))}
         </ScrollView>
-      </Card>
+      </Panel>
 
-      <Card style={styles.block}>
-        <SectionHeader title="Cargar pasos a mano" />
+      {/* Carga manual */}
+      <Panel style={styles.block} tone="dark">
+        <SectionHeader title="Carga manual" color={colors.amber} />
         <Muted style={{ marginBottom: spacing(3) }}>
           Útil si saliste sin el teléfono o si estás usando la versión web.
         </Muted>
@@ -194,12 +217,14 @@ export default function Perfil() {
             onChangeText={(t) => setManual(t.replace(/[^0-9]/g, ''))}
             keyboardType="number-pad"
             placeholder="0"
-            placeholderTextColor={colors.muted}
+            placeholderTextColor={colors.textFaint}
             style={[styles.input, styles.manualInput]}
             maxLength={5}
           />
           <Button
             label="Sumar"
+            icon="plus"
+            size="sm"
             style={styles.manualBtn}
             onPress={() => {
               const n = parseInt(manual, 10);
@@ -208,26 +233,33 @@ export default function Perfil() {
             }}
           />
         </View>
-      </Card>
+      </Panel>
 
-      <Muted style={styles.favs}>❤️ {favorites.length} lugares guardados</Muted>
+      <View style={styles.favsRow}>
+        <PixelIcon name="heart" size={14} color={colors.magenta} />
+        <Muted>{favorites.length} LUGARES GUARDADOS</Muted>
+      </View>
+
       <Button
         label="Borrar mis datos"
+        icon="trash"
         variant="danger"
         onPress={confirmReset}
         style={{ marginTop: spacing(4) }}
       />
-      <Muted style={styles.version}>Pasos v1.0.0</Muted>
+      <Muted style={styles.version}>PASOS v1.0.0</Muted>
     </Screen>
   );
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value, color }) {
   return (
-    <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Muted style={styles.statLabel}>{label}</Muted>
-    </View>
+    <Panel tone="dark" style={styles.stat} shadow={false}>
+      <Score small style={{ color }}>
+        {value}
+      </Score>
+      <Caption color={colors.textFaint}>{label}</Caption>
+    </Panel>
   );
 }
 
@@ -238,61 +270,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(4),
-    paddingVertical: spacing(4),
+    paddingVertical: spacing(5),
   },
-  name: { fontSize: 15, color: colors.lime, lineHeight: 22 },
+  name: { fontSize: 14, color: colors.lime, marginVertical: 5 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(3) },
-  stat: {
-    flexBasis: '47%',
-    flexGrow: 1,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderWidth: 2,
-    borderColor: colors.borderSoft,
-    padding: spacing(3),
-    gap: 2,
-  },
-  statValue: { color: colors.text, fontSize: 18, fontWeight: '900' },
-  statLabel: { fontSize: 11 },
-  block: { marginTop: spacing(4), gap: spacing(2) },
+  stat: { flexBasis: '47%', flexGrow: 1, padding: spacing(3), gap: spacing(2) },
+  block: { marginTop: spacing(5), gap: spacing(2) },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
-  statusText: { fontSize: 13 },
-  batteryNote: { fontSize: 12, marginTop: spacing(1) },
-  error: { color: colors.danger, fontSize: 12 },
-  buttonsRow: { flexDirection: 'row', gap: spacing(3), marginTop: spacing(3) },
-  flexBtn: { flex: 1, minHeight: 44 },
-  link: { color: colors.lime, fontSize: 13, fontWeight: '700', marginTop: spacing(3) },
-  syncNote: { fontSize: 11, marginTop: spacing(2) },
-  weekRow: { flexDirection: 'row', gap: spacing(2) },
-  weekItem: { flex: 1, alignItems: 'center', gap: spacing(1) },
+  statusText: { fontSize: 12, marginTop: spacing(1) },
+  batteryRow: { flexDirection: 'row', gap: spacing(2), marginTop: spacing(2) },
+  batteryNote: { flex: 1, fontSize: 10, lineHeight: 15 },
+  error: { color: colors.red, fontSize: 11, marginTop: spacing(2) },
+  buttonsRow: { flexDirection: 'row', gap: spacing(3), marginTop: spacing(4) },
+  flexBtn: { flex: 1 },
+  link: { flexDirection: 'row', alignItems: 'center', gap: spacing(2), marginTop: spacing(4) },
+  syncNote: { fontSize: 10, marginTop: spacing(3) },
+  weekRow: { flexDirection: 'row', gap: spacing(2), marginTop: spacing(2) },
+  weekItem: { flex: 1, alignItems: 'center', gap: spacing(1.5) },
   weekTrack: {
     width: '100%',
-    height: 64,
-    backgroundColor: colors.cardAlt,
-    borderRadius: radius.sm,
+    height: 58,
+    backgroundColor: colors.bgDeep,
     borderWidth: 2,
-    borderColor: colors.borderSoft,
+    borderColor: colors.borderDim,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
   weekFill: { width: '100%' },
-  weekLabel: { fontSize: 10 },
-  label: { color: colors.text, fontSize: 13, fontWeight: '800', marginTop: spacing(2) },
+  weekLabel: { color: colors.textFaint, fontSize: 9 },
+  todayRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
   input: {
     backgroundColor: colors.bgDeep,
-    borderRadius: radius.sm,
     borderWidth: 2,
     borderColor: colors.border,
     paddingHorizontal: spacing(3),
     paddingVertical: spacing(2.5),
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '700',
+    color: colors.lime,
+    fontFamily: type.label.fontFamily,
+    fontSize: 14,
+    letterSpacing: 0.5,
+    marginBottom: spacing(2),
   },
   avatars: { gap: spacing(3), paddingVertical: spacing(2) },
-  manualRow: { flexDirection: 'row', gap: spacing(3), alignItems: 'center' },
-  manualInput: { flex: 1, textAlign: 'center', fontSize: 18 },
-  manualBtn: { minHeight: 46, paddingHorizontal: spacing(5) },
-  favs: { textAlign: 'center', marginTop: spacing(5) },
-  version: { textAlign: 'center', marginTop: spacing(4), fontSize: 11 },
+  manualRow: { flexDirection: 'row', gap: spacing(3), alignItems: 'flex-start' },
+  manualInput: { flex: 1, minWidth: 0, textAlign: 'center', fontSize: 18, marginBottom: 0 },
+  manualBtn: { minWidth: 110 },
+  favsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing(2),
+    marginTop: spacing(6),
+  },
+  version: { textAlign: 'center', marginTop: spacing(4), fontSize: 10 },
 });

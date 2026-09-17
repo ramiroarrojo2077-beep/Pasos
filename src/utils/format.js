@@ -26,3 +26,15 @@ export function stepsToKcal(steps) {
 export function plural(n, one, many) {
   return n === 1 ? one : many;
 }
+
+/**
+ * La Press Start 2P no tiene mayúsculas acentuadas: los gabinetes de los 80
+ * eran ASCII puro. Sacamos las tildes sólo en los textos que usan esa fuente,
+ * para que no aparezcan glifos de otra tipografía en el medio de una palabra.
+ */
+export function arcade(text) {
+  return String(text ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+}

@@ -1,10 +1,13 @@
-# 👟 Pasos
+# 👟 PASOS
 
-App para contar pasos, competir en torneos con amigos y encontrar cafeterías y
-lugares de comida cerca. Hecha con Expo (React Native): **el mismo código genera
-el APK de Android y la app de iPhone**, y además corre en el navegador.
+Contador de pasos con torneos entre amigos y mapa de cafeterías y lugares de
+comida cerca. Hecha con Expo (React Native): **el mismo código genera el APK de
+Android y la app de iPhone**, y además corre en el navegador.
 
-Estética pixel-art sobre fondo oscuro, en español rioplatense.
+Interfaz **retro arcade**: paleta de fósforo sobre CRT oscuro, tipografía pixel
+(Press Start 2P + Silkscreen), iconos pixel-art dibujados a mano sobre una
+grilla de 12x12, marcos con esquinas en escalón, sombras duras y líneas de
+barrido. Textos en español rioplatense.
 
 ## Qué hace
 
@@ -16,8 +19,9 @@ Estética pixel-art sobre fondo oscuro, en español rioplatense.
 
 **Torneos**
 - Creá torneos de 3 días, 1 semana, 2 semanas o 1 mes.
-- Elegís nombre, ícono, premio/castigo ("el último paga el café") y participantes.
-- Tabla de posiciones con medallas, tu puesto y cuántos pasos te faltan para el primero.
+- Elegís nombre, emblema, premio ("el último del ranking paga el café") y jugadores.
+- Tabla de posiciones con corona y podio, tu puesto y cuántos pasos te faltan
+  para alcanzar al primero.
 - Código de invitación para compartir por WhatsApp.
 
 **Mapa**
@@ -25,10 +29,16 @@ Estética pixel-art sobre fondo oscuro, en español rioplatense.
 - Datos reales de **OpenStreetMap** (sin API key ni tarjeta de crédito).
 - Filtros por categoría, favoritos, distancia y minutos caminando.
 - Ficha de cada lugar con horarios, Wi-Fi, mesas afuera, teléfono, web y "Cómo llegar".
+- En el teléfono usa el mapa real con un estilo CRT neón y chinches pixeladas.
+  En el navegador dibuja una ciudad pixel generada a partir de tus coordenadas
+  (calles, manzanas, parques, río y ventanas encendidas), porque
+  `react-native-maps` no corre en web.
 
 **Amigos**
 - Ranking de hoy / semana / mes.
-- Se agregan con un código de 6 letras.
+- Se agregan con un código de 6 caracteres.
+- Cada jugador elige un personaje pixel (fantasma, invader, robot, gato,
+  calavera o pájaro) en uno de los colores de fósforo.
 
 ## Conteo en segundo plano sin gastar batería
 
@@ -114,26 +124,32 @@ npx expo export --platform web
 
 ```
 app/                      rutas (expo-router)
-  _layout.js              providers, fuentes, guard de onboarding
-  onboarding.js           bienvenida + armado de perfil
+  _layout.js              providers, fuentes pixel y guard de onboarding
+  onboarding.js           pantalla de atracción + armado del jugador
   (tabs)/                 Inicio · Mapa · Torneos · Amigos · Perfil
   torneo/[id].js          detalle del torneo y tabla de posiciones
   torneo/nuevo.js         crear torneo
   lugar/[id].js           ficha del lugar
-  agregar-amigo.js        alta de amigo por código
+  agregar-amigo.js        alta de jugador por código
 src/
+  components/sprites.js   35 sprites 12x12 dibujados a mano
+  components/PixelIcon.js render SVG de los sprites (agrupa píxeles por fila)
+  components/ui.js        kit arcade: paneles, botones, chips, medidores, CRT
+  components/pixelCity.js generador determinista de la ciudad pixel del mapa
+  components/PlacesMap.*  mapa nativo (react-native-maps) y mapa web pixel
   services/steps.js       lectura de pasos (iOS CMPedometer / Android Health Connect)
   services/places.js      búsqueda de lugares en OpenStreetMap + respaldo offline
   state/store.js          estado global + persistencia en AsyncStorage
   state/steps.js          provider único del podómetro
   state/places.js         provider de lugares cercanos
-  components/             UI pixel: tarjetas, botones, rankings, mapa
-  hooks/                  usePedometer, useNearbyPlaces
-  theme.js                colores, tipografía y espaciados
+  theme.js                paleta de fósforo, tipografía y espaciados
 ```
 
-El mapa usa `react-native-maps` en el teléfono y, en web, un mini-mapa pixel
-dibujado a mano (react-native-maps no corre en el navegador).
+Los iconos no son emoji: son sprites propios de 12x12 renderizados como SVG,
+así se ven exactamente igual en Android, iPhone y web. La Press Start 2P no
+tiene mayúsculas acentuadas (los gabinetes de los 80 eran ASCII puro), así que
+los títulos van sin tildes a propósito; el texto corrido y los campos usan
+Silkscreen, que sí las tiene.
 
 ## Estado actual de los datos
 

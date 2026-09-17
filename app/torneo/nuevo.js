@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Avatar, Button, Card, Muted, Screen, SectionHeader } from '../../src/components/ui';
+import PixelIcon from '../../src/components/PixelIcon';
+import {
+  Avatar,
+  Button,
+  Caption,
+  IconButton,
+  Muted,
+  Panel,
+  Screen,
+  SectionHeader,
+} from '../../src/components/ui';
 import { ME, useStore } from '../../src/state/store';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, spacing, type } from '../../src/theme';
 import { addDays, startOfDay } from '../../src/utils/dates';
 import { inviteCode, randomId } from '../../src/utils/geo';
+import { arcade } from '../../src/utils/format';
 
-const EMOJIS = ['🏆', '👟', '🔥', '⚡', '🥇', '🚀', '🎯', '🍕'];
+const ICONS = ['trophy', 'shoe', 'flame', 'star', 'crown', 'target', 'skull', 'food'];
 const DURATIONS = [
   { id: 3, label: '3 días' },
   { id: 7, label: '1 semana' },
@@ -15,19 +26,20 @@ const DURATIONS = [
   { id: 30, label: '1 mes' },
 ];
 const PRIZES = [
-  'El último paga el café ☕',
-  'El ganador elige dónde comemos 🍽️',
-  'El último invita el helado 🍦',
-  'Sin premio, sólo gloria 🏅',
+  'El último del ranking paga el café',
+  'El ganador elige dónde comemos',
+  'El último invita el helado',
+  'Sin premio, sólo el récord',
 ];
 
 export default function NuevoTorneo() {
   const router = useRouter();
   const { friends, createTournament } = useStore();
   const [name, setName] = useState('');
-  const [emoji, setEmoji] = useState('🏆');
+  const [icon, setIcon] = useState('trophy');
   const [days, setDays] = useState(7);
   const [prize, setPrize] = useState(PRIZES[0]);
+  const [custom, setCustom] = useState('');
   const [selected, setSelected] = useState(friends.map((f) => f.id));
 
   const toggle = (id) =>
@@ -38,8 +50,8 @@ export default function NuevoTorneo() {
     const tournament = {
       id: randomId('trn'),
       name: name.trim() || `Torneo de ${days} días`,
-      emoji,
-      prize,
+      icon,
+      prize: custom.trim() || prize,
       code: inviteCode(),
       startISO: start.toISOString(),
       endISO: addDays(start, days).toISOString(),
@@ -52,40 +64,39 @@ export default function NuevoTorneo() {
 
   return (
     <Screen scroll style={styles.screen} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>←</Text>
-        </Pressable>
-        <Text style={styles.title}>Nuevo torneo</Text>
+      <View style={styles.topBar}>
+        <IconButton icon="chevron" flip onPress={() => router.back()} />
+        <Text style={[type.title, styles.title]}>NUEVO TORNEO</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <Card style={styles.block}>
-        <Text style={styles.label}>Nombre</Text>
+      <Panel style={styles.block}>
+        <SectionHeader title="Identidad" color={colors.lime} />
+        <Caption>Nombre</Caption>
         <TextInput
           value={name}
           onChangeText={setName}
           placeholder="Liga de la semana"
-          placeholderTextColor={colors.muted}
+          placeholderTextColor={colors.textFaint}
           style={styles.input}
-          maxLength={28}
+          maxLength={22}
         />
-        <Text style={styles.label}>Ícono</Text>
-        <View style={styles.emojiRow}>
-          {EMOJIS.map((e) => (
+        <Caption>Emblema</Caption>
+        <View style={styles.iconRow}>
+          {ICONS.map((i) => (
             <Pressable
-              key={e}
-              onPress={() => setEmoji(e)}
-              style={[styles.emoji, e === emoji && styles.emojiActive]}
+              key={i}
+              onPress={() => setIcon(i)}
+              style={[styles.iconBox, i === icon && styles.iconBoxActive]}
             >
-              <Text style={styles.emojiText}>{e}</Text>
+              <PixelIcon name={i} size={20} color={i === icon ? colors.bgDeep : colors.textDim} />
             </Pressable>
           ))}
         </View>
-      </Card>
+      </Panel>
 
-      <Card style={styles.block}>
-        <Text style={styles.label}>¿Cuánto dura?</Text>
+      <Panel style={styles.block}>
+        <SectionHeader title="Duración" color={colors.cyan} />
         <View style={styles.optionsRow}>
           {DURATIONS.map((d) => (
             <Pressable
@@ -93,129 +104,148 @@ export default function NuevoTorneo() {
               onPress={() => setDays(d.id)}
               style={[styles.option, days === d.id && styles.optionActive]}
             >
-              <Text style={[styles.optionText, days === d.id && styles.optionTextActive]}>
-                {d.label}
+              <Text
+                style={[
+                  type.title,
+                  { fontSize: 9, color: days === d.id ? colors.bgDeep : colors.textDim },
+                ]}
+              >
+                {arcade(d.label)}
               </Text>
             </Pressable>
           ))}
         </View>
-      </Card>
+      </Panel>
 
-      <Card style={styles.block}>
-        <Text style={styles.label}>Premio / castigo</Text>
+      <Panel style={styles.block}>
+        <SectionHeader title="Premio" color={colors.amber} />
         <View style={styles.prizes}>
-          {PRIZES.map((p) => (
-            <Pressable
-              key={p}
-              onPress={() => setPrize(p)}
-              style={[styles.prize, prize === p && styles.prizeActive]}
-            >
-              <Text style={[styles.prizeText, prize === p && styles.prizeTextActive]}>{p}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <TextInput
-          value={PRIZES.includes(prize) ? '' : prize}
-          onChangeText={setPrize}
-          placeholder="O escribí el tuyo…"
-          placeholderTextColor={colors.muted}
-          style={styles.input}
-          maxLength={44}
-        />
-      </Card>
-
-      <Card style={styles.block}>
-        <SectionHeader title={`Participantes (${selected.length + 1})`} />
-        {friends.length === 0 ? (
-          <Muted>Todavía no tenés amigos agregados. Podés crear el torneo igual e invitarlos con el código.</Muted>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friends}>
-            {friends.map((f) => (
-              <Pressable key={f.id} onPress={() => toggle(f.id)} style={styles.friend}>
-                <Avatar emoji={f.avatar} size={52} active={selected.includes(f.id)} />
+          {PRIZES.map((p) => {
+            const active = !custom.trim() && prize === p;
+            return (
+              <Pressable
+                key={p}
+                onPress={() => {
+                  setPrize(p);
+                  setCustom('');
+                }}
+                style={[styles.prize, active && styles.prizeActive]}
+              >
+                <PixelIcon
+                  name={active ? 'check' : 'star'}
+                  size={12}
+                  color={active ? colors.amber : colors.textFaint}
+                />
                 <Text
                   style={[
-                    styles.friendName,
-                    selected.includes(f.id) && { color: colors.lime },
+                    type.small,
+                    { flex: 1, color: active ? colors.amber : colors.textDim },
                   ]}
                 >
-                  {f.name}
+                  {p}
                 </Text>
               </Pressable>
-            ))}
+            );
+          })}
+        </View>
+        <TextInput
+          value={custom}
+          onChangeText={setCustom}
+          placeholder="O escribí el tuyo"
+          placeholderTextColor={colors.textFaint}
+          style={styles.input}
+          maxLength={40}
+        />
+      </Panel>
+
+      <Panel style={styles.block}>
+        <SectionHeader title={`Jugadores (${selected.length + 1})`} color={colors.magenta} />
+        {friends.length === 0 ? (
+          <Muted>
+            Todavía no tenés amigos agregados. Podés crear el torneo igual e invitarlos con el código.
+          </Muted>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friends}>
+            {friends.map((f) => {
+              const on = selected.includes(f.id);
+              return (
+                <Pressable key={f.id} onPress={() => toggle(f.id)} style={styles.friend}>
+                  <Avatar avatar={f.avatar} size={50} active={on} />
+                  <Text
+                    style={[type.tiny, { color: on ? colors.lime : colors.textFaint }]}
+                    numberOfLines={1}
+                  >
+                    {f.name.toUpperCase()}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
         )}
-      </Card>
+      </Panel>
 
-      <Button label="Crear torneo" icon="🏆" onPress={create} style={styles.cta} />
+      <Button label="Crear torneo" icon="trophy" size="lg" onPress={create} style={styles.cta} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { paddingHorizontal: spacing(4) },
-  header: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing(3),
   },
-  back: { color: colors.text, fontSize: 24, fontWeight: '800' },
-  title: { color: colors.text, fontSize: 18, fontWeight: '800' },
+  title: { fontSize: 12, color: colors.text },
   block: { marginBottom: spacing(4), gap: spacing(2) },
-  label: { color: colors.text, fontSize: 13, fontWeight: '800', marginTop: spacing(1) },
   input: {
     backgroundColor: colors.bgDeep,
-    borderRadius: radius.sm,
     borderWidth: 2,
     borderColor: colors.border,
     paddingHorizontal: spacing(3),
     paddingVertical: spacing(2.5),
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '700',
+    color: colors.lime,
+    fontFamily: type.label.fontFamily,
+    fontSize: 14,
+    letterSpacing: 0.5,
+    marginBottom: spacing(2),
   },
-  emojiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) },
-  emoji: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.sm,
+  iconRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) },
+  iconBox: {
+    width: 42,
+    height: 42,
     borderWidth: 2,
     borderColor: colors.border,
-    backgroundColor: colors.cardAlt,
+    backgroundColor: colors.panelAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emojiActive: { borderColor: colors.lime, backgroundColor: 'rgba(200,247,81,0.12)' },
-  emojiText: { fontSize: 20 },
+  iconBoxActive: { backgroundColor: colors.lime, borderColor: colors.lime },
   optionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) },
   option: {
     flexGrow: 1,
-    paddingVertical: spacing(2.5),
-    paddingHorizontal: spacing(3),
-    borderRadius: radius.sm,
+    flexBasis: '45%',
+    paddingVertical: spacing(3),
     borderWidth: 2,
     borderColor: colors.border,
-    backgroundColor: colors.cardAlt,
+    backgroundColor: colors.panelAlt,
     alignItems: 'center',
   },
-  optionActive: { borderColor: colors.lime, backgroundColor: colors.lime },
-  optionText: { color: colors.textSoft, fontWeight: '800', fontSize: 13 },
-  optionTextActive: { color: '#0A1020' },
+  optionActive: { backgroundColor: colors.cyan, borderColor: colors.cyan },
   prizes: { gap: spacing(2) },
   prize: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(2),
     paddingVertical: spacing(2.5),
     paddingHorizontal: spacing(3),
-    borderRadius: radius.sm,
     borderWidth: 2,
     borderColor: colors.border,
-    backgroundColor: colors.cardAlt,
+    backgroundColor: colors.panelAlt,
   },
-  prizeActive: { borderColor: colors.lime },
-  prizeText: { color: colors.textSoft, fontWeight: '700', fontSize: 13 },
-  prizeTextActive: { color: colors.lime },
-  friends: { gap: spacing(3), paddingVertical: spacing(1) },
-  friend: { alignItems: 'center', gap: spacing(1), width: 64 },
-  friendName: { color: colors.textSoft, fontSize: 12, fontWeight: '700' },
+  prizeActive: { borderColor: colors.amber },
+  friends: { gap: spacing(3), paddingVertical: spacing(2) },
+  friend: { alignItems: 'center', gap: spacing(1.5), width: 62 },
   cta: { marginBottom: spacing(8) },
 });

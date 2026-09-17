@@ -4,7 +4,9 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
-import { useFonts, PressStart2P_400Regular } from '@expo-google-fonts/press-start-2p';
+import { useFonts } from 'expo-font';
+import { PressStart2P_400Regular } from '@expo-google-fonts/press-start-2p';
+import { Silkscreen_400Regular, Silkscreen_700Bold } from '@expo-google-fonts/silkscreen';
 import { StoreProvider, useStore } from '../src/state/store';
 import { PlacesProvider } from '../src/state/places';
 import { StepsProvider } from '../src/state/steps';
@@ -54,7 +56,11 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ PressStart2P_400Regular });
+  const [fontsLoaded] = useFonts({
+    PressStart2P_400Regular,
+    Silkscreen_400Regular,
+    Silkscreen_700Bold,
+  });
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
