@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "Pasos",
+    "slug": "pasos",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "pasos",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A1020",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A1020"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pasos.app",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSMotionUsageDescription": "Pasos usa el sensor de movimiento para contar tus pasos del día.",
+        "NSLocationWhenInUseUsageDescription": "Pasos usa tu ubicación para mostrarte cafeterías y lugares de comida cerca tuyo.",
+        "NSHealthShareUsageDescription": "Pasos lee tu conteo de pasos para armar los torneos con tus amigos."
+      }
+    },
+    "android": {
+      "package": "com.pasos.app",
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#0A1020",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.HIGH_SAMPLING_RATE_SENSORS",
+        "android.permission.health.READ_STEPS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Pasos usa tu ubicación para mostrarte cafeterías y lugares de comida cerca tuyo."
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Pasos usa el sensor de movimiento para contar tus pasos del día."
+        }
+      ],
+      "expo-font",
+      "react-native-health-connect"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
