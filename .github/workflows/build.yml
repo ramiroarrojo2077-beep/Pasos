@@ -137,10 +137,13 @@ jobs:
           path: salida/*.ipa
           if-no-files-found: error
 
+  # Publica los archivos en una release fija para que se puedan bajar con un
+  # link directo, sin entrar a Actions, sin cuenta de GitHub y sin .zip de por
+  # medio. El link nunca cambia: /releases/latest/download/Pasos.apk
   publicar:
-    name: Publicar release
-    if: startsWith(github.ref, 'refs/tags/v')
+    name: Publicar para descargar
     needs: [android, ios]
+    if: always() && (needs.android.result == 'success' || needs.ios.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -148,7 +151,31 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: descargas
+
+      - name: Dejar los archivos con nombre fijo
+        run: |
+          mkdir -p release
+          find descargas -name '*.apk' -exec cp {} release/Pasos.apk \; || true
+          find descargas -name '*.ipa' -exec cp {} release/Pasos.ipa \; || true
+          ls -lh release
+
       - uses: softprops/action-gh-release@v2
         with:
-          files: descargas/**/*
-          generate_release_notes: true
+          tag_name: ultima
+          name: Última versión
+          body: |
+            Descarga directa, sin cuenta de GitHub.
+
+            **Android** — abrí este link desde el teléfono y tocá el archivo:
+            https://github.com/${{ github.repository }}/releases/latest/download/Pasos.apk
+
+            La primera vez Android pide habilitar "Instalar apps desconocidas"
+            para el navegador. Se acepta y listo. Requiere Android 8 o superior.
+
+            **iPhone** — el .ipa va sin firmar, se instala con Sideloadly o
+            AltStore usando tu Apple ID común:
+            https://github.com/${{ github.repository }}/releases/latest/download/Pasos.ipa
+
+            Compilado desde `${{ github.sha }}`.
+          files: release/*
+          make_latest: true

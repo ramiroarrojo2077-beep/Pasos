@@ -65,31 +65,48 @@ En Android, la primera vez hay que tocar **Conectar** en el Perfil para darle
 permiso a Health Connect (viene instalado en Android 14+; en versiones anteriores
 se baja de Play Store).
 
-## Bajarte el APK y la app de iPhone
+## Descargar la app
 
-No hace falta que instales nada: **GitHub compila las dos apps por vos**.
+**Android — un solo link, sin cuenta de GitHub:**
+
+### 📥 [Bajar Pasos.apk](https://github.com/ramiroarrojo2077-beep/Pasos/releases/latest/download/Pasos.apk)
+
+<img src="docs/qr-apk.png" width="180" alt="Código QR para bajar el APK">
+
+Abrí ese link desde el teléfono (o escaneá el QR con la cámara) y tocá el
+archivo cuando termine de bajar. La primera vez Android pide habilitar
+"Instalar apps desconocidas" para el navegador o para WhatsApp: se acepta y
+listo. Ese link siempre apunta a la última versión compilada, así que podés
+mandárselo a tus amigos una vez y no cambia nunca.
+
+**iPhone:**
+
+### [Bajar Pasos.ipa](https://github.com/ramiroarrojo2077-beep/Pasos/releases/latest/download/Pasos.ipa)
+
+Apple no deja firmar apps sin cuenta de desarrollador, así que el `.ipa` va
+**sin firmar**. Se instala con [Sideloadly](https://sideloadly.io) o AltStore
+desde una PC o Mac: enchufás el iPhone, arrastrás el archivo, ponés tu Apple ID
+común. Dura 7 días y se renueva volviendo a enchufarlo. Para que dure como una
+app normal hace falta una cuenta de Apple Developer (99 USD/año) y se distribuye
+por TestFlight.
+
+### Compilar una versión nueva
+
+Cada vez que quieras regenerar los archivos:
 
 1. Entrá a la pestaña **Actions** del repositorio.
-2. Elegí el workflow **Compilar apps** → **Run workflow** → `ambas`.
-3. Cuando termina (unos 15-25 minutos), abrí la corrida y bajá los archivos
-   de la sección **Artifacts**:
-   - `pasos-android-apk` → `Pasos-1.0.0.apk`
-   - `pasos-ios-ipa` → `Pasos-1.0.0-sin-firmar.ipa`
+2. **Compilar apps** → **Run workflow** → `ambas`.
+3. Cuando termina (15-25 minutos), los links de arriba ya apuntan a lo nuevo.
 
-También podés publicar un tag (`git tag v1.0.0 && git push --tags`) y los dos
-archivos quedan colgados en la sección Releases, con link directo para mandarle
-a tus amigos.
+Los archivos también quedan como *artifacts* de cada corrida, por si querés una
+versión vieja en particular.
 
-### Instalar el APK en Android
+### Firmar el APK con tu propia clave
 
-Pasale el `.apk` a quien quieras. Al abrirlo, Android pide habilitar
-"Instalar apps desconocidas" para el navegador o para WhatsApp; se acepta y
-listo. Viene firmado con la clave de depuración, que alcanza para instalarlo y
-compartirlo entre ustedes.
-
-Si más adelante querés una clave propia y estable (necesaria para actualizar la
-app sin desinstalarla, y para Google Play), generá un keystore con **estos
-valores exactos**:
+Por defecto el APK va firmado con la clave de depuración, que alcanza para
+instalarlo y compartirlo. Si querés una clave propia y estable —necesaria para
+actualizar la app sin desinstalarla, y para Google Play— generá un keystore con
+**estos valores exactos**:
 
 ```bash
 keytool -genkeypair -v -keystore pasos.keystore -alias androiddebugkey \
@@ -98,25 +115,9 @@ keytool -genkeypair -v -keystore pasos.keystore -alias androiddebugkey \
 base64 -w0 pasos.keystore
 ```
 
-Pegá el resultado en el repositorio, en Settings → Secrets and variables →
-Actions → New secret, con el nombre `ANDROID_KEYSTORE_BASE64`. El workflow lo
-detecta solo y firma con esa clave. Guardá el archivo: si lo perdés, no podés
-volver a actualizar la app.
-
-### Instalar el .ipa en un iPhone
-
-Apple no deja firmar apps sin una cuenta de desarrollador, así que el `.ipa`
-sale **sin firmar**. Tenés tres caminos:
-
-| Camino | Qué necesitás | Dura |
-|---|---|---|
-| **Sideloadly** o **AltStore** en una PC o Mac | Tu Apple ID común, gratis | 7 días, se renueva enchufando el teléfono |
-| **Expo Go** (`npx expo start`, escaneás el QR) | Nada | Para probar, no instala la app de verdad |
-| **TestFlight** vía EAS | Cuenta de Apple Developer, 99 USD/año | 90 días, se instala como cualquier app |
-
-Para el primer camino: bajás [Sideloadly](https://sideloadly.io), enchufás el
-iPhone, arrastrás el `.ipa`, ponés tu Apple ID y le das a Start. Cada 7 días
-hay que repetirlo porque así funcionan las firmas gratuitas de Apple.
+Pegá el resultado en Settings → Secrets and variables → Actions → New secret,
+con el nombre `ANDROID_KEYSTORE_BASE64`. El workflow lo detecta solo. Guardá el
+archivo: si lo perdés, no podés volver a actualizar la app.
 
 ### Para las tiendas (Google Play y App Store)
 
