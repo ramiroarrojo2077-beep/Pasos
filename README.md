@@ -69,7 +69,9 @@ se baja de Play Store).
 
 **Android — un solo link, sin cuenta de GitHub:**
 
-### 📥 [Bajar Pasos.apk](https://github.com/ramiroarrojo2077-beep/Pasos/releases/latest/download/Pasos.apk)
+### 📥 [Bajar Pasos.apk](https://raw.githubusercontent.com/ramiroarrojo2077-beep/Pasos/descargas/Pasos.apk)
+
+<sub>Espejo: [desde Releases](https://github.com/ramiroarrojo2077-beep/Pasos/releases/latest/download/Pasos.apk) — si tu navegador se queda en "Descargando..." al 100%, usá el link de arriba, que no pasa por redirecciones.</sub>
 
 <img src="docs/qr-apk.png" width="180" alt="Código QR para bajar el APK">
 
@@ -81,7 +83,7 @@ mandárselo a tus amigos una vez y no cambia nunca.
 
 **iPhone:**
 
-### [Bajar Pasos.ipa](https://github.com/ramiroarrojo2077-beep/Pasos/releases/latest/download/Pasos.ipa)
+### [Bajar Pasos.ipa](https://raw.githubusercontent.com/ramiroarrojo2077-beep/Pasos/descargas/Pasos.ipa)
 
 Apple no deja firmar apps sin cuenta de desarrollador, así que el `.ipa` va
 **sin firmar**. Se instala con [Sideloadly](https://sideloadly.io) o AltStore
