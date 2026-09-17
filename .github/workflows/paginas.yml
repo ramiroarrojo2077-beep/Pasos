@@ -1,31 +1,29 @@
 name: Publicar pagina de descarga
 
-# Sirve el APK como archivo plano en GitHub Pages: una sola URL, sin
-# redirecciones ni URLs firmadas, que es lo que suele trabar a los
-# navegadores embebidos. Toma el archivo de la release, no recompila.
+# Deja el APK como archivo plano en una rama aparte, servido por
+# raw.githubusercontent.com: una sola dirección, sin redirecciones a otro
+# dominio ni URLs firmadas, que es lo que traba a los navegadores
+# embebidos. Toma el archivo de la release, no recompila.
 on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: descargas
   cancel-in-progress: false
 
 jobs:
   publicar:
-    name: Publicar en Pages
+    name: Publicar la descarga directa
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Traer los archivos de la release
         run: |
           set -euo pipefail
@@ -39,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           unzip -t sitio/Pasos.apk > /dev/null && echo "El zip del APK abre sin errores"
-          echo "Contiene AndroidManifest:"
+          echo "AndroidManifest presente:"
           unzip -l sitio/Pasos.apk | grep -c AndroidManifest.xml
           echo "Arquitecturas incluidas:"
           unzip -l sitio/Pasos.apk | grep -o 'lib/[^/]*' | sort -u
@@ -95,16 +93,27 @@ jobs:
           HTML
           ls -lh sitio
 
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      # Rama huérfana con un solo commit: los binarios no engordan el
+      # historial del proyecto, y cada publicación la reemplaza entera.
+      - name: Publicar en la rama descargas
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf /tmp/pub && mkdir -p /tmp/pub
+          cp sitio/Pasos.apk sitio/Pasos.ipa sitio/index.html /tmp/pub/
+          cd /tmp/pub
+          git init -q -b descargas
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Descarga directa de Pasos"
+          git push -q --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" descargas
+          echo "Publicado en la rama descargas"
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: sitio
-
-      - id: deploy
-        uses: actions/deploy-pages@v4
-
-      - name: Mostrar la dirección
-        run: echo "Página publicada en ${{ steps.deploy.outputs.page_url }}"
+      - name: Direcciones finales
+        run: |
+          RAMA="https://raw.githubusercontent.com/$REPO/descargas"
+          echo "APK: $RAMA/Pasos.apk"
+          echo "IPA: $RAMA/Pasos.ipa"
