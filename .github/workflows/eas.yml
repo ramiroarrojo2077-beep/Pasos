@@ -1,0 +1,40 @@
+name: Compilar con EAS
+
+# Camino oficial de Expo: sirve para el .aab de Google Play y para una app de
+# iPhone firmada de verdad. Necesita el secret EXPO_TOKEN
+# (lo sacás de https://expo.dev/settings/access-tokens).
+on:
+  workflow_dispatch:
+    inputs:
+      plataforma:
+        description: Plataforma
+        type: choice
+        default: android
+        options: [android, ios, all]
+      perfil:
+        description: Perfil de eas.json
+        type: choice
+        default: preview
+        options: [preview, production]
+
+jobs:
+  eas:
+    name: EAS Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      - name: Lanzar la compilación
+        run: eas build --platform ${{ inputs.plataforma }} --profile ${{ inputs.perfil }} --non-interactive --no-wait

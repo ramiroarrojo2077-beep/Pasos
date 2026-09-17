@@ -28,7 +28,6 @@
     },
     "android": {
       "package": "com.pasos.app",
-      "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#0A1020",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -62,6 +61,7 @@
         }
       ],
       "expo-font",
+      "expo-system-ui",
       "react-native-health-connect"
     ],
     "experiments": {

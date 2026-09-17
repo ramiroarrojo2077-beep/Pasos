@@ -65,7 +65,76 @@ En Android, la primera vez hay que tocar **Conectar** en el Perfil para darle
 permiso a Health Connect (viene instalado en Android 14+; en versiones anteriores
 se baja de Play Store).
 
-## Correr el proyecto
+## Bajarte el APK y la app de iPhone
+
+No hace falta que instales nada: **GitHub compila las dos apps por vos**.
+
+1. Entrá a la pestaña **Actions** del repositorio.
+2. Elegí el workflow **Compilar apps** → **Run workflow** → `ambas`.
+3. Cuando termina (unos 15-25 minutos), abrí la corrida y bajá los archivos
+   de la sección **Artifacts**:
+   - `pasos-android-apk` → `Pasos-1.0.0.apk`
+   - `pasos-ios-ipa` → `Pasos-1.0.0-sin-firmar.ipa`
+
+También podés publicar un tag (`git tag v1.0.0 && git push --tags`) y los dos
+archivos quedan colgados en la sección Releases, con link directo para mandarle
+a tus amigos.
+
+### Instalar el APK en Android
+
+Pasale el `.apk` a quien quieras. Al abrirlo, Android pide habilitar
+"Instalar apps desconocidas" para el navegador o para WhatsApp; se acepta y
+listo. Viene firmado con la clave de depuración, que alcanza para instalarlo y
+compartirlo entre ustedes.
+
+Si más adelante querés una clave propia y estable (necesaria para actualizar la
+app sin desinstalarla, y para Google Play), generá un keystore con **estos
+valores exactos**:
+
+```bash
+keytool -genkeypair -v -keystore pasos.keystore -alias androiddebugkey \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -storepass android -keypass android
+base64 -w0 pasos.keystore
+```
+
+Pegá el resultado en el repositorio, en Settings → Secrets and variables →
+Actions → New secret, con el nombre `ANDROID_KEYSTORE_BASE64`. El workflow lo
+detecta solo y firma con esa clave. Guardá el archivo: si lo perdés, no podés
+volver a actualizar la app.
+
+### Instalar el .ipa en un iPhone
+
+Apple no deja firmar apps sin una cuenta de desarrollador, así que el `.ipa`
+sale **sin firmar**. Tenés tres caminos:
+
+| Camino | Qué necesitás | Dura |
+|---|---|---|
+| **Sideloadly** o **AltStore** en una PC o Mac | Tu Apple ID común, gratis | 7 días, se renueva enchufando el teléfono |
+| **Expo Go** (`npx expo start`, escaneás el QR) | Nada | Para probar, no instala la app de verdad |
+| **TestFlight** vía EAS | Cuenta de Apple Developer, 99 USD/año | 90 días, se instala como cualquier app |
+
+Para el primer camino: bajás [Sideloadly](https://sideloadly.io), enchufás el
+iPhone, arrastrás el `.ipa`, ponés tu Apple ID y le das a Start. Cada 7 días
+hay que repetirlo porque así funcionan las firmas gratuitas de Apple.
+
+### Para las tiendas (Google Play y App Store)
+
+Ese camino va por EAS, que maneja la firma por vos:
+
+```bash
+npm install -g eas-cli
+eas login
+eas build:configure
+eas build -p android --profile production   # .aab para Google Play
+eas build -p ios --profile production       # para App Store / TestFlight
+```
+
+También está el workflow **Compilar con EAS** en Actions: cargás el secret
+`EXPO_TOKEN` (lo sacás de expo.dev → Settings → Access tokens) y lo lanzás
+desde la web, sin instalar nada.
+
+## Correr el proyecto en tu máquina
 
 ```bash
 npm install
@@ -76,49 +145,7 @@ Escaneá el QR con Expo Go para una prueba rápida, o `npx expo start --web` par
 el navegador.
 
 > Health Connect y los mapas nativos necesitan un *development build*, no Expo Go:
-> `npx eas build --profile development --platform android`
-
-## Generar el APK y la app de iPhone
-
-Necesitás una cuenta gratis de Expo:
-
-```bash
-npm install -g eas-cli
-eas login
-eas build:configure
-```
-
-**APK de Android** (se instala directo en el teléfono):
-
-```bash
-npm run build:apk          # eas build -p android --profile preview
-```
-
-Cuando termina, EAS te da un link para descargar el `.apk`. Pasáselo a tus
-amigos y que lo instalen habilitando "Orígenes desconocidos".
-
-**iPhone**:
-
-```bash
-npm run build:ios          # eas build -p ios --profile preview
-```
-
-Para instalarlo en iPhones hace falta una cuenta de Apple Developer (99 USD/año)
-y registrar los dispositivos con `eas device:create`. Sin eso, la alternativa es
-correrla con Expo Go o compilar en una Mac con Xcode.
-
-**Para las tiendas**:
-
-```bash
-eas build -p android --profile production   # .aab para Google Play
-eas build -p ios --profile production       # para App Store
-```
-
-**Versión web** (para subir a Netlify, Vercel o GitHub Pages):
-
-```bash
-npx expo export --platform web
-```
+> `eas build --profile development --platform android`
 
 ## Cómo está armado
 
