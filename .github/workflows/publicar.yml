@@ -11,7 +11,7 @@ on:
 
 jobs:
   publicar:
-    name: Publicar en la release
+    name: Publicar desde una corrida
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -28,30 +28,49 @@ jobs:
           find descargas -name '*.ipa' -exec cp {} release/Pasos.ipa \;
           ls -lh release
 
-      - name: Crear o actualizar la release
+      - name: Actualizar la descarga directa
         run: |
           set -euo pipefail
-          NOTAS="Descarga directa, sin cuenta de GitHub.
+          mkdir -p release
+          find descargas -name 'Pasos*.apk' -exec cp {} release/Pasos.apk \; || true
+          find descargas -name 'Pasos*.ipa' -exec cp {} release/Pasos.ipa \; || true
+          ls -lh release
+          unzip -t release/Pasos.apk > /dev/null && echo "El APK abre sin errores"
 
-          **Android** — abrí este link desde el teléfono y tocá el archivo:
-          https://github.com/$REPO/releases/latest/download/Pasos.apk
-
-          La primera vez Android pide habilitar \"Instalar apps desconocidas\"
-          para el navegador. Requiere Android 8 o superior.
-
-          **iPhone** — el .ipa va sin firmar; se instala con Sideloadly o
-          AltStore usando tu Apple ID común:
-          https://github.com/$REPO/releases/latest/download/Pasos.ipa"
-
-          if gh release view ultima --repo "$REPO" >/dev/null 2>&1; then
-            echo "La release ya existe, subo los archivos"
-            gh release upload ultima release/* --repo "$REPO" --clobber
-            gh release edit ultima --repo "$REPO" --notes "$NOTAS" --latest
+          rm -rf /tmp/pub
+          if git clone -q --depth 1 --branch descargas \
+               "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" /tmp/pub 2>/dev/null; then
+            rm -rf /tmp/pub/.git
           else
-            echo "Creo la release"
-            gh release create ultima release/* --repo "$REPO" \
-              --title "Última versión" --notes "$NOTAS" --latest
+            mkdir -p /tmp/pub
           fi
+
+          cp release/* /tmp/pub/
+          cd /tmp/pub
+          git init -q -b descargas
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Descarga directa de Pasos"
+          git push -q --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" descargas
+          echo "APK: https://raw.githubusercontent.com/$REPO/descargas/Pasos.apk"
+
+      - name: Crear o actualizar la release
+        run: |
+          set -uo pipefail
+          for archivo in release/*; do
+            nombre=$(basename "$archivo")
+            for intento in 1 2 3; do
+              gh release delete-asset ultima "$nombre" --repo "$REPO" --yes 2>/dev/null || true
+              if gh release upload ultima "$archivo" --repo "$REPO" --clobber; then
+                echo "$nombre subido"
+                break
+              fi
+              echo "Intento $intento falló para $nombre, reintento"
+              sleep $((intento * 10))
+            done
+          done
 
       - name: Confirmar que quedó publicada
         run: |
