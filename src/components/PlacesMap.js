@@ -24,8 +24,11 @@ const CITY = {
 };
 
 /**
- * En web no existe react-native-maps, así que dibujamos una ciudad pixel
- * generada a partir de las coordenadas: calles, manzanas, parques y río.
+ * Mapa pixel generado a partir de las coordenadas: calles, manzanas,
+ * parques y río. Se dibuja igual en el teléfono y en el navegador, así que
+ * la app no depende del SDK de Google Maps —que además exige una clave y
+ * una cuenta de facturación— ni de ningún módulo nativo de mapas.
+ * Para llegar a un lugar abrimos la app de mapas del teléfono.
  */
 export default function PlacesMap({ center, places = [], selectedId, onSelect, style, showTag = true }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -198,7 +201,7 @@ export default function PlacesMap({ center, places = [], selectedId, onSelect, s
       {showTag ? (
         <View style={styles.tag}>
           <Text style={[type.tiny, { color: colors.textFaint, letterSpacing: 1 }]}>
-            MODO WEB · MAPA SIMULADO
+            MAPA PIXEL · ZONA APROXIMADA
           </Text>
         </View>
       ) : null}
