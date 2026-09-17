@@ -51,9 +51,15 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # x86 y x86_64 solo sirven para emuladores: sacarlas baja el APK a la
+      # mitad sin afectar a ningún teléfono real. useLegacyPackaging comprime
+      # las librerías nativas dentro del APK, que es lo que se descarga.
       - name: Compilar
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon
+        run: |
+          ./gradlew assembleRelease --no-daemon \
+            -PreactNativeArchitectures=armeabi-v7a,arm64-v8a \
+            -Pexpo.useLegacyPackaging=true
 
       - name: Renombrar el APK
         run: |
@@ -61,6 +67,8 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk \
              "salida/Pasos-$(node -p "require('./app.json').expo.version").apk"
           ls -lh salida
+          echo "Arquitecturas incluidas:"
+          unzip -l salida/*.apk | grep -o 'lib/[^/]*' | sort -u
 
       - uses: actions/upload-artifact@v4
         with:
