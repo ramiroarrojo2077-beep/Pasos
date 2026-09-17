@@ -192,6 +192,13 @@ Si más adelante querés que los pasos se compartan de verdad entre teléfonos, 
 lugar para engancharlo es `src/state/store.js` (las acciones ya están separadas
 del resto de la app) más un endpoint que reciba `{ code, history }`.
 
+## Requisitos
+
+- **Android 8.0 (API 26) o superior.** Lo impone Health Connect, que es de
+  donde leemos los pasos con la app cerrada; por debajo de esa versión ni
+  siquiera existe.
+- **iOS 15.1 o superior**, el piso de Expo SDK 57.
+
 ## Permisos que pide
 
 - **Actividad física / movimiento**: para contar los pasos.
