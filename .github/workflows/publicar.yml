@@ -1,0 +1,59 @@
+name: Publicar descarga
+
+# Toma los archivos ya compilados por una corrida de "Compilar apps" y los
+# publica en la release fija. Sirve para republicar sin volver a compilar.
+on:
+  workflow_dispatch:
+    inputs:
+      corrida:
+        description: ID de la corrida de "Compilar apps" que tiene los archivos
+        required: true
+
+jobs:
+  publicar:
+    name: Publicar en la release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Bajar los archivos de esa corrida
+        run: |
+          set -euo pipefail
+          gh run download "${{ inputs.corrida }}" --repo "$REPO" --dir descargas
+          mkdir -p release
+          find descargas -name '*.apk' -exec cp {} release/Pasos.apk \;
+          find descargas -name '*.ipa' -exec cp {} release/Pasos.ipa \;
+          ls -lh release
+
+      - name: Crear o actualizar la release
+        run: |
+          set -euo pipefail
+          NOTAS="Descarga directa, sin cuenta de GitHub.
+
+          **Android** — abrí este link desde el teléfono y tocá el archivo:
+          https://github.com/$REPO/releases/latest/download/Pasos.apk
+
+          La primera vez Android pide habilitar \"Instalar apps desconocidas\"
+          para el navegador. Requiere Android 8 o superior.
+
+          **iPhone** — el .ipa va sin firmar; se instala con Sideloadly o
+          AltStore usando tu Apple ID común:
+          https://github.com/$REPO/releases/latest/download/Pasos.ipa"
+
+          if gh release view ultima --repo "$REPO" >/dev/null 2>&1; then
+            echo "La release ya existe, subo los archivos"
+            gh release upload ultima release/* --repo "$REPO" --clobber
+            gh release edit ultima --repo "$REPO" --notes "$NOTAS" --latest
+          else
+            echo "Creo la release"
+            gh release create ultima release/* --repo "$REPO" \
+              --title "Última versión" --notes "$NOTAS" --latest
+          fi
+
+      - name: Confirmar que quedó publicada
+        run: |
+          gh release view ultima --repo "$REPO" --json tagName,assets \
+            --jq '.tagName + " → " + ([.assets[].name] | join(", "))'

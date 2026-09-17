@@ -159,23 +159,36 @@ jobs:
           find descargas -name '*.ipa' -exec cp {} release/Pasos.ipa \; || true
           ls -lh release
 
-      - uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ultima
-          name: Última versión
-          body: |
-            Descarga directa, sin cuenta de GitHub.
+      - name: Crear o actualizar la release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          NOTAS="Descarga directa, sin cuenta de GitHub.
 
-            **Android** — abrí este link desde el teléfono y tocá el archivo:
-            https://github.com/${{ github.repository }}/releases/latest/download/Pasos.apk
+          **Android** — abrí este link desde el teléfono y tocá el archivo:
+          https://github.com/$REPO/releases/latest/download/Pasos.apk
 
-            La primera vez Android pide habilitar "Instalar apps desconocidas"
-            para el navegador. Se acepta y listo. Requiere Android 8 o superior.
+          La primera vez Android pide habilitar \"Instalar apps desconocidas\"
+          para el navegador. Requiere Android 8 o superior.
 
-            **iPhone** — el .ipa va sin firmar, se instala con Sideloadly o
-            AltStore usando tu Apple ID común:
-            https://github.com/${{ github.repository }}/releases/latest/download/Pasos.ipa
+          **iPhone** — el .ipa va sin firmar; se instala con Sideloadly o
+          AltStore usando tu Apple ID común:
+          https://github.com/$REPO/releases/latest/download/Pasos.ipa"
 
-            Compilado desde `${{ github.sha }}`.
-          files: release/*
-          make_latest: true
+          if gh release view ultima --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload ultima release/* --repo "$REPO" --clobber
+            gh release edit ultima --repo "$REPO" --notes "$NOTAS" --latest
+          else
+            gh release create ultima release/* --repo "$REPO" \
+              --title "Última versión" --notes "$NOTAS" --latest
+          fi
+
+      - name: Confirmar que quedó publicada
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh release view ultima --repo "$REPO" --json tagName,assets \
+            --jq '.tagName + " → " + ([.assets[].name] | join(", "))'
