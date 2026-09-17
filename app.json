@@ -9,11 +9,6 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A1020",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0A1020"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pasos.app",
@@ -61,6 +56,15 @@
         }
       ],
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#05070F",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain"
+        }
+      ],
       "expo-system-ui",
       "react-native-health-connect",
       [

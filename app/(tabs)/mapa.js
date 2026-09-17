@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, V
 import { useRouter } from 'expo-router';
 import PixelIcon from '../../src/components/PixelIcon';
 import { Caption, Chip, IconButton, Muted, Panel, Screen } from '../../src/components/ui';
-import PlacesMap from '../../src/components/PlacesMap';
+import MapaSeguro from '../../src/components/MapaSeguro';
 import PlaceRow from '../../src/components/PlaceRow';
 import { usePlaces } from '../../src/state/places';
 import { useStore } from '../../src/state/store';
@@ -48,7 +48,7 @@ export default function Mapa() {
       </View>
 
       <View style={styles.mapFrame}>
-        <PlacesMap
+        <MapaSeguro
           center={center}
           places={filtered}
           selectedId={selected}

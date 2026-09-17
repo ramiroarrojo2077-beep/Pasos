@@ -11,8 +11,14 @@ import { StoreProvider, useStore } from '../src/state/store';
 import { PlacesProvider } from '../src/state/places';
 import { StepsProvider } from '../src/state/steps';
 import { colors } from '../src/theme';
+import CrashCatcher, { GameOver } from '../src/components/CrashCatcher';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+/** expo-router usa este export cuando una ruta revienta al renderizar. */
+export function ErrorBoundary({ error, retry }) {
+  return <GameOver error={error} onRetry={retry} />;
+}
 
 function RootNavigator() {
   const { ready, profile } = useStore();
@@ -69,16 +75,18 @@ export default function RootLayout() {
   if (!fontsLoaded) return <View style={styles.loading} />;
 
   return (
-    <SafeAreaProvider>
-      <StoreProvider>
-        <StepsProvider>
-          <PlacesProvider>
-            <StatusBar style="light" />
-            <RootNavigator />
-          </PlacesProvider>
-        </StepsProvider>
-      </StoreProvider>
-    </SafeAreaProvider>
+    <CrashCatcher>
+      <SafeAreaProvider>
+        <StoreProvider>
+          <StepsProvider>
+            <PlacesProvider>
+              <StatusBar style="light" />
+              <RootNavigator />
+            </PlacesProvider>
+          </StepsProvider>
+        </StoreProvider>
+      </SafeAreaProvider>
+    </CrashCatcher>
   );
 }
 

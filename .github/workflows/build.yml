@@ -193,6 +193,28 @@ jobs:
               --title "Última versión" --notes "$NOTAS" --latest
           fi
 
+      # La misma tanda va también a la rama de descarga directa, que es la
+      # que no pasa por redirecciones y la que usa el README.
+      - name: Actualizar la descarga directa
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/pub && mkdir -p /tmp/pub
+          gh release download ultima --repo "$REPO" --pattern 'Pasos.apk' --dir /tmp/pub
+          gh release download ultima --repo "$REPO" --pattern 'Pasos.ipa' --dir /tmp/pub
+          unzip -t /tmp/pub/Pasos.apk > /dev/null && echo "El APK abre sin errores"
+          cd /tmp/pub
+          git init -q -b descargas
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Descarga directa de Pasos"
+          git push -q --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" descargas
+          echo "APK: https://raw.githubusercontent.com/$REPO/descargas/Pasos.apk"
+
       - name: Confirmar que quedó publicada
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

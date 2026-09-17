@@ -14,7 +14,7 @@ import {
   Panel,
   Screen,
 } from '../../src/components/ui';
-import PlacesMap from '../../src/components/PlacesMap';
+import MapaSeguro from '../../src/components/MapaSeguro';
 import { CATEGORY_SPRITE } from '../../src/components/sprites';
 import { usePlaces } from '../../src/state/places';
 import { useStore } from '../../src/state/store';
@@ -99,7 +99,7 @@ export default function LugarDetalle() {
 
       <Panel tone="dark" style={styles.mapCard}>
         <View style={styles.mapWrap}>
-          <PlacesMap center={center} places={[place]} selectedId={place.id} showTag={false} />
+          <MapaSeguro center={center} places={[place]} selectedId={place.id} showTag={false} />
         </View>
         {place.address ? (
           <View style={styles.addressRow}>

@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Dimensions,
+  Easing,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import PixelIcon from './PixelIcon';
@@ -58,6 +63,38 @@ export function Scanlines({ opacity = 0.16, period = 4 }) {
   );
 }
 
+/** Golpecito corto al presionar, como el clic de un botón de gabinete. */
+export function tocar() {
+  if (Platform.OS === 'web') return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+}
+
+/** Barrido lento del haz, como el refresco de un tubo de rayos catódicos. */
+export function CRTSweep({ duration = 7000 }) {
+  const y = useRef(new Animated.Value(-120)).current;
+  const alto = Dimensions.get('window').height;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(y, {
+        toValue: alto + 120,
+        duration,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [y, alto, duration]);
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.sweep, { transform: [{ translateY: y }] }]}
+    />
+  );
+}
+
 export function Screen({
   children,
   scroll = false,
@@ -79,6 +116,7 @@ export function Screen({
         {children}
       </Container>
       <Scanlines />
+      <CRTSweep />
     </SafeAreaView>
   );
 }
@@ -268,7 +306,14 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={blocked ? undefined : onPress}
+      onPress={
+        blocked
+          ? undefined
+          : () => {
+              tocar();
+              onPress?.();
+            }
+      }
       style={style}
     >
       {({ pressed }) => (
@@ -333,7 +378,10 @@ export function Chip({ label, icon, active, onPress, color = colors.lime }) {
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
+      onPress={() => {
+        tocar();
+        onPress?.();
+      }}
       style={({ pressed }) => [
         styles.chip,
         active && { backgroundColor: color, borderColor: color },
@@ -461,6 +509,14 @@ export function EmptyState({ icon = 'shoe', title, subtitle, action }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
+  sweep: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 120,
+    backgroundColor: colors.cyan,
+    opacity: 0.035,
+  },
   flex: { flex: 1 },
   scrollContent: { paddingBottom: spacing(10) },
   caption: { letterSpacing: 1.2 },

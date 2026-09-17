@@ -16,7 +16,7 @@ import {
   SectionHeader,
   SegmentBar,
 } from '../../src/components/ui';
-import PlacesMap from '../../src/components/PlacesMap';
+import MapaSeguro from '../../src/components/MapaSeguro';
 import PlaceRow from '../../src/components/PlaceRow';
 import { usePlaces } from '../../src/state/places';
 import { useSteps } from '../../src/state/steps';
@@ -257,7 +257,7 @@ export default function Home() {
         />
         <Panel tone="dark" style={styles.mapCard}>
           <View style={styles.mapWrap}>
-            <PlacesMap center={center} places={places.slice(0, 12)} showTag={false} />
+            <MapaSeguro center={center} places={places.slice(0, 12)} showTag={false} />
           </View>
           {nearest ? (
             <PlaceRow
